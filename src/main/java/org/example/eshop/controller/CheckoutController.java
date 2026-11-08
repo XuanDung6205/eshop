@@ -1,0 +1,61 @@
+package org.example.eshop.controller;
+
+import org.example.eshop.cart.Cart;
+import org.example.eshop.dto.CheckoutForm;
+import org.example.eshop.entity.Order;
+import org.example.eshop.entity.PaymentMethod;
+import org.example.eshop.entity.User;
+import org.example.eshop.service.OrderService;
+import org.example.eshop.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.security.Principal;
+
+@Controller
+@RequestMapping("/checkout")
+@RequiredArgsConstructor
+public class CheckoutController {
+    private final Cart cart;
+    private final OrderService orderService;
+    private final UserService userService;
+
+    @GetMapping
+    public String form(Model model, Principal principal) {
+        if (cart.isEmpty()) return "redirect:/cart";
+        User u = userService.findByUsername(principal.getName());
+        CheckoutForm f = new CheckoutForm();
+        f.setCustomerName(u.getFullName());
+        f.setPhone(u.getPhone());
+        f.setAddress(u.getAddress());
+        model.addAttribute("form", f);
+        model.addAttribute("cart", cart);
+        return "checkout/form";
+    }
+
+    @PostMapping
+    public String submit(@Valid @ModelAttribute("form") CheckoutForm form, BindingResult result,
+                         Model model, RedirectAttributes ra, Principal principal) {
+        if (result.hasErrors()) {
+            model.addAttribute("cart", cart);
+            return "checkout/form";
+        }
+        try {
+            Order order = orderService.placeOrder(form, cart, principal.getName());
+            cart.clear();
+            if (order.getPaymentMethod() == PaymentMethod.BANKING) {
+                return "redirect:/orders/" + order.getId() + "/payment";
+            }
+            ra.addFlashAttribute("message", "Đặt hàng thành công! Mã đơn #" + order.getId());
+            return "redirect:/orders/" + order.getId();
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/cart";
+        }
+    }
+}
