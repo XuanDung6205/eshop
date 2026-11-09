@@ -11,6 +11,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/admin/products")
 @RequiredArgsConstructor
@@ -28,6 +30,15 @@ public class AdminProductController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoryId", categoryId);
         return "admin/product/list";
+    }
+
+    @GetMapping("/semantic-search")
+    public String semanticSearch(@RequestParam(required = false) String query, Model model) {
+        model.addAttribute("query", query);
+        model.addAttribute("results", query == null || query.isBlank()
+                ? List.of()
+                : productService.semanticSearch(query, 20));
+        return "admin/product/semantic-search";
     }
 
     @GetMapping("/new")
@@ -70,6 +81,13 @@ public class AdminProductController {
         return "redirect:/admin/products";
     }
 
+    @PostMapping("/reindex")
+    public String reindex(RedirectAttributes ra) {
+        int indexedCount = productService.reindexAllProducts();
+        ra.addFlashAttribute("message", "Đã đồng bộ vector cho " + indexedCount + " sản phẩm");
+        return "redirect:/admin/products";
+    }
+
     private String showForm(Model model, Product product, Long selectedCategoryId) {
         model.addAttribute("product", product);
         model.addAttribute("categories", categoryService.findAll());
@@ -77,4 +95,3 @@ public class AdminProductController {
         return "admin/product/form";
     }
 }
-

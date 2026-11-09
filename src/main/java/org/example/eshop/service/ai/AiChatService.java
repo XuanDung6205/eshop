@@ -61,10 +61,10 @@ public class AiChatService {
     private String chatInternal(String userPrompt) {
         String apiKey = aiConfig.getApiKey();
 
-        if (!StringUtils.hasText(apiKey) || "your_gemini_api_key_here".equalsIgnoreCase(apiKey.trim())) {
-            log.warn("Gemini API Key chưa được cấu hình trong application.properties. Trả về thông báo demo.");
+        if (!StringUtils.hasText(apiKey)) {
+            log.warn("Gemini API Key chưa được cấu hình trong biến môi trường GEMINI_API_KEY. Trả về thông báo demo.");
             return "[eShop AI Demo]: Bạn chưa cấu hình Google Gemini API Key hợp lệ. " +
-                    "Vui lòng cập nhật thuộc tính 'spring.ai.gemini.api-key' trong application.properties.";
+                    "Vui lòng cấu hình biến môi trường GEMINI_API_KEY.";
         }
 
         apiKey = apiKey.trim();

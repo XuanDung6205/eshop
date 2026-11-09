@@ -7,7 +7,13 @@
     <div th:replace="~{fragments/layout :: alerts}"></div>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Quản lý sản phẩm</h3>
-        <a class="btn btn-success" th:href="@{/admin/products/new}">+ Thêm sản phẩm</a>
+        <div class="d-flex gap-2">
+            <form th:action="@{/admin/products/reindex}" method="post"
+                  onsubmit="return confirm('Lập chỉ mục lại toàn bộ sản phẩm? Thao tác này gọi dịch vụ embedding cho từng sản phẩm.')">
+                <button class="btn btn-outline-primary">Đồng bộ vector</button>
+            </form>
+            <a class="btn btn-success" th:href="@{/admin/products/new}">+ Thêm sản phẩm</a>
+        </div>
     </div>
     <form class="row g-2 mb-3" th:action="@{/admin/products}" method="get">
         <div class="col-md-5"><input class="form-control" name="keyword" th:value="${keyword}" placeholder="Tên sản phẩm"></div>
@@ -19,6 +25,15 @@
             </select>
         </div>
         <div class="col-md-3"><button class="btn btn-primary w-100">Lọc</button></div>
+    </form>
+    <form class="row g-2 mb-4" th:action="@{/admin/products/semantic-search}" method="get">
+        <div class="col-md-9">
+            <input class="form-control" name="query"
+                   placeholder="Tìm theo ý nghĩa, ví dụ: điện thoại chụp ảnh đẹp và pin lâu">
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-success w-100">Tìm ngữ nghĩa bằng vector</button>
+        </div>
     </form>
     <table class="table table-bordered table-hover align-middle">
         <thead class="table-light">
@@ -63,4 +78,3 @@
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>
-
