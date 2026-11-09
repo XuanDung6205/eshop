@@ -13,7 +13,7 @@ import java.time.Duration;
 @Configuration
 public class AiConfig {
 
-    @Value("${spring.ai.gemini.api-key:your_gemini_api_key_here}")
+    @Value("${spring.ai.gemini.api-key:}")
     private String apiKey;
 
     @Value("${spring.ai.gemini.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")

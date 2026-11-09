@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tìm sản phẩm ngữ nghĩa')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<main class="container">
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3>Tìm sản phẩm bằng ngữ nghĩa</h3>
+            <p class="text-muted mb-0">Kết quả được tìm từ vector tên và mô tả sản phẩm.</p>
+        </div>
+        <a class="btn btn-outline-secondary" th:href="@{/admin/products}">Quản lý sản phẩm</a>
+    </div>
+
+    <form class="row g-2 mb-4" th:action="@{/admin/products/semantic-search}" method="get">
+        <div class="col-md-9">
+            <input class="form-control" name="query" th:value="${query}" required
+                   placeholder="Ví dụ: điện thoại chụp ảnh đẹp và pin lâu">
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-success w-100">Tìm tương tự</button>
+        </div>
+    </form>
+
+    <div th:if="${query != null and !#lists.isEmpty(results)}" class="alert alert-info">
+        Tìm thấy <span th:text="${#lists.size(results)}"></span> sản phẩm phù hợp với:
+        <strong th:text="${query}"></strong>
+    </div>
+    <div th:if="${query != null and #lists.isEmpty(results)}" class="alert alert-warning">
+        Không tìm thấy sản phẩm phù hợp. Hãy kiểm tra sản phẩm đã được lập chỉ mục chưa.
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(results)}">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Ảnh</th>
+                <th>Sản phẩm</th>
+                <th>Danh mục</th>
+                <th>Khớp với</th>
+                <th class="text-end">Giá</th>
+                <th class="text-end">Độ tương đồng</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="result : ${results}">
+                <td th:text="${result.product.id}"></td>
+                <td><img class="thumb rounded" th:src="${result.product.imageUrl}" alt=""></td>
+                <td>
+                    <strong th:text="${result.product.name}"></strong>
+                    <div class="small text-muted" th:text="${result.product.description}"></div>
+                </td>
+                <td th:text="${result.product.category.name}"></td>
+                <td th:text="${result.matchedField}"></td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(result.product.price, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
+                <td class="text-end"
+                    th:text="${result.score == null ? '—' : #numbers.formatDecimal(result.score, 1, 4)}"></td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:href="@{/admin/products/{id}/edit(id=${result.product.id})}">Sửa</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
