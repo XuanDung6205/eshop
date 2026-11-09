@@ -21,7 +21,9 @@ public class ChatRequest {
     private String conversationId;
 
     /**
-     * Dữ liệu ngữ cảnh bổ sung từ Vector Database (dành cho Thành viên 3 cắm RAG vào)
+     * Giữ lại để tương thích với client cũ. Ngữ cảnh do client gửi không được
+     * dùng làm nguồn dữ liệu; API chat tự truy vấn Vector Database cho mỗi câu hỏi.
      */
+    @Deprecated
     private String context;
 }

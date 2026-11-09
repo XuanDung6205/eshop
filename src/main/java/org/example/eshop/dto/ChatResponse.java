@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,13 +19,20 @@ public class ChatResponse {
     private LocalDateTime timestamp;
     private boolean success;
     private String errorMessage;
+    /** Products retrieved from the vector store and used to ground the answer. */
+    private List<ProductReference> sources;
 
     public static ChatResponse of(String reply, String conversationId) {
+        return of(reply, conversationId, List.of());
+    }
+
+    public static ChatResponse of(String reply, String conversationId, List<ProductReference> sources) {
         return ChatResponse.builder()
                 .reply(reply)
                 .conversationId(conversationId)
                 .timestamp(LocalDateTime.now())
                 .success(true)
+                .sources(sources == null ? List.of() : List.copyOf(sources))
                 .build();
     }
 
@@ -34,6 +42,7 @@ public class ChatResponse {
                 .conversationId(conversationId)
                 .timestamp(LocalDateTime.now())
                 .success(false)
+                .sources(List.of())
                 .build();
     }
 }
