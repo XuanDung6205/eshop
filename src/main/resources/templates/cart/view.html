@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Giỏ hàng')}"></head>
-<body>
+<body data-track-page="cart">
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 <main class="container">
     <div th:replace="~{fragments/layout :: alerts}"></div>
@@ -28,7 +28,8 @@
                 </td>
                 <td class="text-end" th:text="${#numbers.formatDecimal(i.price, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
                 <td>
-                    <form th:action="@{/cart/update}" method="post" class="d-flex gap-1">
+                    <form th:action="@{/cart/update}" method="post" class="d-flex gap-1"
+                          data-track-event="CART_UPDATE_CLICK">
                         <input type="hidden" name="productId" th:value="${i.productId}">
                         <input type="number" name="quantity" min="0" class="form-control form-control-sm" th:value="${i.quantity}">
                         <button class="btn btn-sm btn-outline-secondary">Cập nhật</button>
@@ -36,7 +37,8 @@
                 </td>
                 <td class="text-end" th:text="${#numbers.formatDecimal(i.subtotal, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
                 <td>
-                    <form th:action="@{/cart/remove/{id}(id=${i.productId})}" method="post">
+                    <form th:action="@{/cart/remove/{id}(id=${i.productId})}" method="post"
+                          data-track-event="CART_REMOVE_CLICK" th:attr="data-track-product-id=${i.productId}">
                         <button class="btn btn-sm btn-outline-danger">✕</button>
                     </form>
                 </td>
@@ -51,7 +53,7 @@
             </tfoot>
         </table>
         <div class="d-flex justify-content-between">
-            <form th:action="@{/cart/clear}" method="post">
+            <form th:action="@{/cart/clear}" method="post" data-track-event="CART_CLEAR_CLICK">
                 <button class="btn btn-outline-danger">Xoá giỏ hàng</button>
             </form>
             <div>

@@ -1,5 +1,6 @@
 package org.example.eshop.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.eshop.cart.Cart;
 import org.example.eshop.dto.CheckoutForm;
 import org.example.eshop.entity.Order;
@@ -7,6 +8,7 @@ import org.example.eshop.entity.PaymentMethod;
 import org.example.eshop.entity.User;
 import org.example.eshop.service.OrderService;
 import org.example.eshop.service.UserService;
+import org.example.eshop.tracking.TrackingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -24,6 +26,7 @@ public class CheckoutController {
     private final Cart cart;
     private final OrderService orderService;
     private final UserService userService;
+    private final TrackingService trackingService;
 
     @GetMapping
     public String form(Model model, Principal principal) {
@@ -40,13 +43,15 @@ public class CheckoutController {
 
     @PostMapping
     public String submit(@Valid @ModelAttribute("form") CheckoutForm form, BindingResult result,
-                         Model model, RedirectAttributes ra, Principal principal) {
+                         @RequestParam(required = false) String trackingSessionId,
+                         HttpServletRequest request, Model model, RedirectAttributes ra, Principal principal) {
         if (result.hasErrors()) {
             model.addAttribute("cart", cart);
             return "checkout/form";
         }
         try {
             Order order = orderService.placeOrder(form, cart, principal.getName());
+            trackingService.recordOrderPlaced(order, trackingSessionId, request);
             cart.clear();
             if (order.getPaymentMethod() == PaymentMethod.BANKING) {
                 return "redirect:/orders/" + order.getId() + "/payment";

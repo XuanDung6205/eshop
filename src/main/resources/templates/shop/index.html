@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Cửa hàng')}"></head>
-<body>
+<body data-track-page="products"
+      th:attr="data-track-keyword=${keyword},data-track-category-id=${categoryId},data-track-result-count=${products.totalElements}">
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 <main class="container">
     <div th:replace="~{fragments/layout :: alerts}"></div>
@@ -35,7 +36,8 @@
                             <h6 class="card-title" th:text="${p.name}"></h6>
                             <div class="price mb-2" th:text="${#numbers.formatDecimal(p.price, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></div>
                             <div class="mt-auto">
-                                <form th:action="@{/cart/add}" method="post" class="d-inline" sec:authorize="!hasRole('SELLER')">
+                                <form th:action="@{/cart/add}" method="post" class="d-inline"
+                                      data-track-event="ADD_TO_CART_CLICK" sec:authorize="!hasRole('SELLER')">
                                     <input type="hidden" name="productId" th:value="${p.id}">
                                     <button class="btn btn-sm btn-primary" th:disabled="${p.quantity == 0}">🛒 Thêm vào giỏ</button>
                                 </form>

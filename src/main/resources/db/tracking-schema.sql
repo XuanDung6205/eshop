@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS tracking_event (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    event_type VARCHAR(32) NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    user_id BIGINT NULL,
+    product_id BIGINT NULL,
+    order_id BIGINT NULL,
+    category_id BIGINT NULL,
+    keyword VARCHAR(200) NULL,
+    result_count BIGINT NULL,
+    quantity INT NULL,
+    page_path VARCHAR(200) NULL,
+    occurred_at DATETIME(6) NOT NULL,
+    received_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_tracking_session_time (session_id, occurred_at),
+    KEY idx_tracking_user_time (user_id, occurred_at),
+    KEY idx_tracking_type_time (event_type, occurred_at),
+    CONSTRAINT fk_tracking_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+);

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Thanh toán')}"></head>
-<body>
+<body data-track-page="checkout">
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 <main class="container">
     <h3>Thanh toán</h3>
     <div class="row g-4">
         <div class="col-md-7">
-            <form th:action="@{/checkout}" th:object="${form}" method="post">
+            <form th:action="@{/checkout}" th:object="${form}" method="post" data-track-session>
                 <div class="mb-3">
                     <label class="form-label">Họ tên người nhận *</label>
                     <input class="form-control" th:field="*{customerName}" th:errorclass="is-invalid">
