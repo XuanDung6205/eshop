@@ -40,6 +40,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <!-- Spring MVC và REST -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -86,12 +87,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Thư viện viết Unit Test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
         <!-- Lõi Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
