@@ -64,7 +64,7 @@ public class ProductDataInitializer implements CommandLineRunner {
         EXACT_PRODUCT_IMAGES.put(23L, "https://images.unsplash.com/photo-1541140532154-b024d705b909?w=600&auto=format&fit=crop&q=80"); // Logitech K380
         EXACT_PRODUCT_IMAGES.put(24L, "https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&auto=format&fit=crop&q=80"); // Keychron K2 V2
         EXACT_PRODUCT_IMAGES.put(25L, "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop&q=80"); // Logitech M331 Silent
-        EXACT_PRODUCT_IMAGES.put(26L, "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&auto=format&fit=crop&q=80"); // Logitech MX Master 3S
+        EXACT_PRODUCT_IMAGES.put(26L, "https://images.unsplash.com/photo-1586349906319-48d20e9d17e5?w=600&auto=format&fit=crop&q=80"); // Logitech MX Master 3S
         EXACT_PRODUCT_IMAGES.put(27L, "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&auto=format&fit=crop&q=80"); // Razer DeathAdder
 
         // 6. Màn hình
