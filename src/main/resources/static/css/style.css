@@ -27,6 +27,7 @@ main.container {
     background: var(--primary-gradient);
     box-shadow: 0 4px 20px -2px rgba(30, 58, 138, 0.25);
     backdrop-filter: blur(10px);
+    z-index: 1035 !important;
 }
 
 .brand-icon {
@@ -97,6 +98,17 @@ main.container {
 .shop-hero-banner {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
     box-shadow: 0 12px 30px -10px rgba(37, 99, 235, 0.35);
+}
+
+.category-sidebar-card {
+    z-index: 10 !important;
+    max-height: calc(100vh - 105px);
+    display: flex;
+    flex-direction: column;
+}
+
+.category-sidebar-card .card-body {
+    overflow-y: auto;
 }
 
 .category-nav-list .list-group-item {
