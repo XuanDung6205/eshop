@@ -42,7 +42,10 @@ public class ProductVectorService {
             String descriptionId = documentId(product.getId(), "DESCRIPTION");
             documentIds.add(nameId);
             documentIds.add(descriptionId);
-            documents.add(new Document(nameId, product.getName(), metadata(product, "NAME")));
+            String categoryPrefix = (product.getCategory() != null && StringUtils.hasText(product.getCategory().getName()))
+                    ? product.getCategory().getName() + " - "
+                    : "";
+            documents.add(new Document(nameId, categoryPrefix + product.getName(), metadata(product, "NAME")));
             if (StringUtils.hasText(product.getDescription())) {
                 documents.add(new Document(descriptionId, product.getDescription(), metadata(product, "DESCRIPTION")));
             }

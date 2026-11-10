@@ -39,7 +39,8 @@ public class AiChatService {
     }
 
     /**
-     * Chat có ngữ cảnh (RAG integration point dành riêng cho Thành viên 3 cắm Vector DB vào)
+     * Chat có ngữ cảnh (RAG integration point dành riêng cho Thành viên 3 cắm
+     * Vector DB vào)
      */
     public String chatWithContext(String userMessage, String contextData) {
         return chatWithContext(userMessage, contextData, "");
@@ -88,22 +89,37 @@ public class AiChatService {
             log.warn("Gọi model {} ({}) gặp lỗi: {}. Đang tự động dò tìm model khả dụng từ Google AI Studio...",
                     modelToUse, apiVer, ex.getMessage());
 
-            // 2. Tự động truy vấn ModelService.ListModels để tìm model chính xác mà API Key này được phép dùng
+            // Xoá cache cũ nếu model đã cache bị lỗi (tránh bị kẹt vĩnh viễn ở model đã ngưng hỗ trợ)
+            this.discoveredModel = null;
+
+            // 2. Tự động truy vấn ModelService.ListModels để thử lần lượt các model khả dụng thực tế
             try {
-                DiscoveredInfo info = discoverSupportedModel(apiKey);
-                if (info != null && StringUtils.hasText(info.modelName)) {
-                    this.discoveredModel = info.modelName;
-                    this.discoveredApiVersion = info.apiVersion;
-                    log.info("Đã tìm thấy model tương thích: {} ({})", info.modelName, info.apiVersion);
-                    return executeNativeCall(userPrompt, apiKey, info.modelName, info.apiVersion);
+                List<DiscoveredInfo> candidates = discoverSupportedModels(apiKey);
+                for (DiscoveredInfo info : candidates) {
+                    if (info.modelName.equals(modelToUse) && info.apiVersion.equals(apiVer)) {
+                        continue;
+                    }
+                    try {
+                        String result = executeNativeCall(userPrompt, apiKey, info.modelName, info.apiVersion);
+                        this.discoveredModel = info.modelName;
+                        this.discoveredApiVersion = info.apiVersion;
+                        log.info("Đã tìm thấy và kết nối thành công model: {} ({})", info.modelName, info.apiVersion);
+                        return result;
+                    } catch (Exception candidateEx) {
+                        log.debug("Thử model {} ({}) không thành công: {}", info.modelName, info.apiVersion,
+                                candidateEx.getMessage());
+                    }
                 }
             } catch (Exception discoverEx) {
                 log.warn("Không thể tự động ListModels: {}", discoverEx.getMessage());
             }
 
-            // 3. Fallback sang danh sách các tên model phổ biến khác trên cả v1 và v1beta
-            String[] fallbackModels = {"gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-1.5-flash-002", "gemini-1.5-pro"};
-            String[] versions = {"v1beta", "v1"};
+            // 3. Fallback sang danh sách các model thế hệ mới và phổ biến của Google
+            String[] fallbackModels = {
+                    "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash",
+                    "gemini-2.5-flash-lite", "gemini-2.0-flash"
+            };
+            String[] versions = { "v1beta", "v1" };
 
             for (String ver : versions) {
                 for (String m : fallbackModels) {
@@ -113,7 +129,8 @@ public class AiChatService {
                         this.discoveredApiVersion = ver;
                         log.info("Fallback thành công với model {} ({})", m, ver);
                         return result;
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
             }
 
@@ -130,14 +147,12 @@ public class AiChatService {
         String cleanModel = model.startsWith("models/") ? model.substring(7) : model;
         String nativeUri = String.format(
                 "https://generativelanguage.googleapis.com/%s/models/%s:generateContent?key=%s",
-                apiVersion, cleanModel, apiKey
-        );
+                apiVersion, cleanModel, apiKey);
 
         GeminiNativeRequest payload = new GeminiNativeRequest(
                 AiConfig.DEFAULT_SYSTEM_PROMPT,
                 userPrompt,
-                aiConfig.getTemperature()
-        );
+                aiConfig.getTemperature());
 
         GeminiNativeResponse response = geminiRestClient.post()
                 .uri(nativeUri)
@@ -151,10 +166,12 @@ public class AiChatService {
             if (candidate.getFinishReason() != null && !"STOP".equalsIgnoreCase(candidate.getFinishReason())) {
                 log.warn("Gemini phản hồi dừng bất thường [finishReason: {}]", candidate.getFinishReason());
             }
-            if (candidate.getContent() != null && candidate.getContent().getParts() != null && !candidate.getContent().getParts().isEmpty()) {
+            if (candidate.getContent() != null && candidate.getContent().getParts() != null
+                    && !candidate.getContent().getParts().isEmpty()) {
                 StringBuilder replyBuilder = new StringBuilder();
                 for (GeminiPart part : candidate.getContent().getParts()) {
-                    if (part != null && !Boolean.TRUE.equals(part.getThought()) && StringUtils.hasText(part.getText())) {
+                    if (part != null && !Boolean.TRUE.equals(part.getThought())
+                            && StringUtils.hasText(part.getText())) {
                         replyBuilder.append(part.getText());
                     }
                 }
@@ -169,29 +186,36 @@ public class AiChatService {
     }
 
     /**
-     * Tự động truy vấn ModelService.ListModels từ Google để biết chính xác API Key này có quyền với model nào
+     * Tự động truy vấn ModelService.ListModels từ Google để lấy danh sách các model khả dụng,
+     * sắp xếp ưu tiên flash-lite và các dòng flash mới nhất lên đầu.
      */
-    private DiscoveredInfo discoverSupportedModel(String apiKey) {
-        String[] versions = {"v1beta", "v1"};
+    private List<DiscoveredInfo> discoverSupportedModels(String apiKey) {
+        List<DiscoveredInfo> preferred = new ArrayList<>();
+        List<DiscoveredInfo> flashModels = new ArrayList<>();
+        List<DiscoveredInfo> others = new ArrayList<>();
+        String[] versions = { "v1beta", "v1" };
+
         for (String ver : versions) {
             try {
-                String listUrl = String.format("https://generativelanguage.googleapis.com/%s/models?key=%s", ver, apiKey);
+                String listUrl = String.format("https://generativelanguage.googleapis.com/%s/models?key=%s", ver,
+                        apiKey);
                 GeminiModelListResponse listResp = geminiRestClient.get()
                         .uri(listUrl)
                         .retrieve()
                         .body(GeminiModelListResponse.class);
 
-                if (listResp != null && listResp.getModels() != null && !listResp.getModels().isEmpty()) {
-                    // Ưu tiên model chứa flash
+                if (listResp != null && listResp.getModels() != null) {
                     for (GeminiModelItem item : listResp.getModels()) {
-                        if (item.supportsGenerateContent() && item.getName() != null && item.getName().contains("flash")) {
-                            return new DiscoveredInfo(item.getName(), ver);
+                        if (!item.supportsGenerateContent() || !StringUtils.hasText(item.getName())) {
+                            continue;
                         }
-                    }
-                    // Nếu không có flash, lấy model bất kỳ hỗ trợ generateContent
-                    for (GeminiModelItem item : listResp.getModels()) {
-                        if (item.supportsGenerateContent() && item.getName() != null) {
-                            return new DiscoveredInfo(item.getName(), ver);
+                        String name = item.getName();
+                        if (name.contains("flash-lite") || name.contains("3.")) {
+                            preferred.add(new DiscoveredInfo(name, ver));
+                        } else if (name.contains("flash")) {
+                            flashModels.add(new DiscoveredInfo(name, ver));
+                        } else {
+                            others.add(new DiscoveredInfo(name, ver));
                         }
                     }
                 }
@@ -199,19 +223,26 @@ public class AiChatService {
                 log.debug("Lỗi khi kiểm tra ListModels ở {}: {}", ver, e.getMessage());
             }
         }
-        return null;
+
+        List<DiscoveredInfo> result = new ArrayList<>(preferred.size() + flashModels.size() + others.size());
+        result.addAll(preferred);
+        result.addAll(flashModels);
+        result.addAll(others);
+        return result;
     }
 
     private static class DiscoveredInfo {
         final String modelName;
         final String apiVersion;
+
         DiscoveredInfo(String modelName, String apiVersion) {
             this.modelName = modelName;
             this.apiVersion = apiVersion;
         }
     }
 
-    // ================= DTOs Java thuần dành cho Native Google Gemini REST API =================
+    // ================= DTOs Java thuần dành cho Native Google Gemini REST API
+    // =================
 
     public static class GeminiNativeRequest {
         @JsonProperty("system_instruction")
@@ -219,7 +250,8 @@ public class AiChatService {
         private List<GeminiContent> contents;
         private GeminiGenerationConfig generationConfig;
 
-        public GeminiNativeRequest() {}
+        public GeminiNativeRequest() {
+        }
 
         public GeminiNativeRequest(String systemPrompt, String userPrompt, Double temperature) {
             this.systemInstruction = new GeminiContent(List.of(new GeminiPart(systemPrompt)));
@@ -229,12 +261,29 @@ public class AiChatService {
             }
         }
 
-        public GeminiContent getSystemInstruction() { return systemInstruction; }
-        public void setSystemInstruction(GeminiContent systemInstruction) { this.systemInstruction = systemInstruction; }
-        public List<GeminiContent> getContents() { return contents; }
-        public void setContents(List<GeminiContent> contents) { this.contents = contents; }
-        public GeminiGenerationConfig getGenerationConfig() { return generationConfig; }
-        public void setGenerationConfig(GeminiGenerationConfig generationConfig) { this.generationConfig = generationConfig; }
+        public GeminiContent getSystemInstruction() {
+            return systemInstruction;
+        }
+
+        public void setSystemInstruction(GeminiContent systemInstruction) {
+            this.systemInstruction = systemInstruction;
+        }
+
+        public List<GeminiContent> getContents() {
+            return contents;
+        }
+
+        public void setContents(List<GeminiContent> contents) {
+            this.contents = contents;
+        }
+
+        public GeminiGenerationConfig getGenerationConfig() {
+            return generationConfig;
+        }
+
+        public void setGenerationConfig(GeminiGenerationConfig generationConfig) {
+            this.generationConfig = generationConfig;
+        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -243,7 +292,8 @@ public class AiChatService {
         private String role;
         private List<GeminiPart> parts;
 
-        public GeminiContent() {}
+        public GeminiContent() {
+        }
 
         public GeminiContent(List<GeminiPart> parts) {
             this.parts = parts;
@@ -254,10 +304,21 @@ public class AiChatService {
             this.parts = parts;
         }
 
-        public String getRole() { return role; }
-        public void setRole(String role) { this.role = role; }
-        public List<GeminiPart> getParts() { return parts; }
-        public void setParts(List<GeminiPart> parts) { this.parts = parts; }
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
+
+        public List<GeminiPart> getParts() {
+            return parts;
+        }
+
+        public void setParts(List<GeminiPart> parts) {
+            this.parts = parts;
+        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -266,16 +327,28 @@ public class AiChatService {
         private String text;
         private Boolean thought;
 
-        public GeminiPart() {}
+        public GeminiPart() {
+        }
 
         public GeminiPart(String text) {
             this.text = text;
         }
 
-        public String getText() { return text; }
-        public void setText(String text) { this.text = text; }
-        public Boolean getThought() { return thought; }
-        public void setThought(Boolean thought) { this.thought = thought; }
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+
+        public Boolean getThought() {
+            return thought;
+        }
+
+        public void setThought(Boolean thought) {
+            this.thought = thought;
+        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -283,26 +356,44 @@ public class AiChatService {
         private Double temperature;
         private Integer maxOutputTokens = 2048;
 
-        public GeminiGenerationConfig() {}
+        public GeminiGenerationConfig() {
+        }
 
         public GeminiGenerationConfig(Double temperature) {
             this.temperature = temperature;
         }
 
-        public Double getTemperature() { return temperature; }
-        public void setTemperature(Double temperature) { this.temperature = temperature; }
-        public Integer getMaxOutputTokens() { return maxOutputTokens; }
-        public void setMaxOutputTokens(Integer maxOutputTokens) { this.maxOutputTokens = maxOutputTokens; }
+        public Double getTemperature() {
+            return temperature;
+        }
+
+        public void setTemperature(Double temperature) {
+            this.temperature = temperature;
+        }
+
+        public Integer getMaxOutputTokens() {
+            return maxOutputTokens;
+        }
+
+        public void setMaxOutputTokens(Integer maxOutputTokens) {
+            this.maxOutputTokens = maxOutputTokens;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class GeminiNativeResponse {
         private List<GeminiCandidate> candidates;
 
-        public GeminiNativeResponse() {}
+        public GeminiNativeResponse() {
+        }
 
-        public List<GeminiCandidate> getCandidates() { return candidates; }
-        public void setCandidates(List<GeminiCandidate> candidates) { this.candidates = candidates; }
+        public List<GeminiCandidate> getCandidates() {
+            return candidates;
+        }
+
+        public void setCandidates(List<GeminiCandidate> candidates) {
+            this.candidates = candidates;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -311,22 +402,40 @@ public class AiChatService {
         @JsonProperty("finishReason")
         private String finishReason;
 
-        public GeminiCandidate() {}
+        public GeminiCandidate() {
+        }
 
-        public GeminiContent getContent() { return content; }
-        public void setContent(GeminiContent content) { this.content = content; }
-        public String getFinishReason() { return finishReason; }
-        public void setFinishReason(String finishReason) { this.finishReason = finishReason; }
+        public GeminiContent getContent() {
+            return content;
+        }
+
+        public void setContent(GeminiContent content) {
+            this.content = content;
+        }
+
+        public String getFinishReason() {
+            return finishReason;
+        }
+
+        public void setFinishReason(String finishReason) {
+            this.finishReason = finishReason;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class GeminiModelListResponse {
         private List<GeminiModelItem> models;
 
-        public GeminiModelListResponse() {}
+        public GeminiModelListResponse() {
+        }
 
-        public List<GeminiModelItem> getModels() { return models; }
-        public void setModels(List<GeminiModelItem> models) { this.models = models; }
+        public List<GeminiModelItem> getModels() {
+            return models;
+        }
+
+        public void setModels(List<GeminiModelItem> models) {
+            this.models = models;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -334,11 +443,21 @@ public class AiChatService {
         private String name;
         private List<String> supportedGenerationMethods;
 
-        public GeminiModelItem() {}
+        public GeminiModelItem() {
+        }
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public List<String> getSupportedGenerationMethods() { return supportedGenerationMethods; }
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public List<String> getSupportedGenerationMethods() {
+            return supportedGenerationMethods;
+        }
+
         public void setSupportedGenerationMethods(List<String> supportedGenerationMethods) {
             this.supportedGenerationMethods = supportedGenerationMethods;
         }

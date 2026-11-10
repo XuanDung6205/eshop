@@ -21,12 +21,15 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
     private static final int MAX_SHOP_VECTOR_SEARCH_DOCUMENTS = 100;
+    private static final double MIN_SHOP_SIMILARITY = 0.55;
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -43,11 +46,22 @@ public class ProductService {
         int topK = categoryId == null
                 ? (int) Math.min(MAX_SHOP_VECTOR_SEARCH_DOCUMENTS, Math.max(20L, requestedDocuments))
                 : MAX_SHOP_VECTOR_SEARCH_DOCUMENTS;
+
+        List<Long> mentionedCategories = categoryId == null
+                ? productRepository.findCategoryIdsMentionedInQuery(query.toLowerCase(Locale.ROOT))
+                : List.of();
+        Set<Long> effectiveCategoryIds = categoryId != null
+                ? Set.of(categoryId)
+                : (mentionedCategories != null && !mentionedCategories.isEmpty()
+                        ? Set.copyOf(mentionedCategories)
+                        : Set.of());
+
         List<Product> matches = semanticSearch(query, topK).stream()
+                .filter(result -> result.score() == null || result.score() >= MIN_SHOP_SIMILARITY)
                 .map(SemanticSearchResult::product)
-                .filter(product -> categoryId == null
-                        || product.getCategory() != null
-                        && categoryId.equals(product.getCategory().getId()))
+                .filter(product -> effectiveCategoryIds.isEmpty()
+                        || (product.getCategory() != null
+                                && effectiveCategoryIds.contains(product.getCategory().getId())))
                 .toList();
 
         int fromIndex = (int) Math.min(matches.size(), (long) normalizedPage * size);
@@ -86,8 +100,7 @@ public class ProductService {
                 resultsByProductId.putIfAbsent(productId, new SemanticSearchResult(
                         product,
                         match.getScore(),
-                        String.valueOf(match.getMetadata().getOrDefault("sourceType", ""))
-                ));
+                        String.valueOf(match.getMetadata().getOrDefault("sourceType", ""))));
             }
         }
         return List.copyOf(resultsByProductId.values());

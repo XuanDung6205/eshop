@@ -145,4 +145,40 @@ class ProductServiceTest {
         assertEquals("NAME", results.get(0).matchedField());
         assertEquals(second, results.get(1).product());
     }
+
+    @Test
+    void shopSearchFiltersOutLowSimilarityAndUnrelatedMentionedCategories() {
+        Product phone = new Product();
+        ReflectionTestUtils.setField(phone, "id", 1L);
+        Category phoneCat = mock(Category.class);
+        when(phoneCat.getId()).thenReturn(1L);
+        phone.setCategory(phoneCat);
+
+        Product lowScorePhone = new Product();
+        ReflectionTestUtils.setField(lowScorePhone, "id", 2L);
+        lowScorePhone.setCategory(phoneCat);
+
+        Product vacuum = new Product();
+        ReflectionTestUtils.setField(vacuum, "id", 3L);
+        Category homeCat = mock(Category.class);
+        when(homeCat.getId()).thenReturn(15L);
+        vacuum.setCategory(homeCat);
+
+        Document phoneDoc = Document.builder().id("p1").text("iPhone 15")
+                .metadata(Map.of("productId", 1L, "sourceType", "NAME")).score(0.75).build();
+        Document lowScoreDoc = Document.builder().id("p2").text("Phone Case")
+                .metadata(Map.of("productId", 2L, "sourceType", "NAME")).score(0.45).build();
+        Document vacuumDoc = Document.builder().id("p3").text("Robot hút bụi")
+                .metadata(Map.of("productId", 3L, "sourceType", "NAME")).score(0.65).build();
+
+        when(productRepository.findCategoryIdsMentionedInQuery("điện thoại xấu")).thenReturn(List.of(1L));
+        when(productVectorService.search("điện thoại xấu", 20))
+                .thenReturn(List.of(phoneDoc, lowScoreDoc, vacuumDoc));
+        when(productRepository.findAllById(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(phone, lowScorePhone, vacuum));
+
+        var results = productService.searchForShop("điện thoại xấu", null, 0, 12);
+
+        assertEquals(List.of(phone), results.getContent());
+    }
 }
