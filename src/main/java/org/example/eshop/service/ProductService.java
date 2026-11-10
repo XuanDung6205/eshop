@@ -29,7 +29,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ProductService {
     private static final int MAX_SHOP_VECTOR_SEARCH_DOCUMENTS = 100;
-    private static final double MIN_SHOP_SIMILARITY = 0.55;
+    private static final double MIN_SHOP_SIMILARITY = 0.68;
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -56,13 +56,32 @@ public class ProductService {
                         ? Set.copyOf(mentionedCategories)
                         : Set.of());
 
-        List<Product> matches = semanticSearch(query, topK).stream()
+        Map<Long, Product> mergedById = new LinkedHashMap<>();
+
+        // 1. Ưu tiên khớp từ khoá SQL (tên, mô tả, tên danh mục - không phân biệt hoa thường)
+        List<Product> keywordMatches = productRepository.findKeywordMatches(query, categoryId);
+        if (keywordMatches != null) {
+            for (Product product : keywordMatches) {
+                if (product.getId() != null) {
+                    mergedById.putIfAbsent(product.getId(), product);
+                }
+            }
+        }
+
+        // 2. Bổ sung kết quả tìm kiếm ngữ nghĩa Vector đạt ngưỡng tương đồng
+        semanticSearch(query, topK).stream()
                 .filter(result -> result.score() == null || result.score() >= MIN_SHOP_SIMILARITY)
                 .map(SemanticSearchResult::product)
                 .filter(product -> effectiveCategoryIds.isEmpty()
                         || (product.getCategory() != null
                                 && effectiveCategoryIds.contains(product.getCategory().getId())))
-                .toList();
+                .forEach(product -> {
+                    if (product.getId() != null) {
+                        mergedById.putIfAbsent(product.getId(), product);
+                    }
+                });
+
+        List<Product> matches = List.copyOf(mergedById.values());
 
         int fromIndex = (int) Math.min(matches.size(), (long) normalizedPage * size);
         int toIndex = Math.min(fromIndex + size, matches.size());

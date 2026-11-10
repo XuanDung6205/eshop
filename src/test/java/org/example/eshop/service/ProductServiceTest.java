@@ -181,4 +181,22 @@ class ProductServiceTest {
 
         assertEquals(List.of(phone), results.getContent());
     }
+
+    @Test
+    void shopSearchCombinesKeywordMatchesCaseInsensitivelyWithVectors() {
+        Product speaker1 = new Product();
+        ReflectionTestUtils.setField(speaker1, "id", 10L);
+        Product speaker2 = new Product();
+        ReflectionTestUtils.setField(speaker2, "id", 11L);
+        Product speaker3 = new Product();
+        ReflectionTestUtils.setField(speaker3, "id", 12L);
+
+        when(productRepository.findKeywordMatches("loa", null))
+                .thenReturn(List.of(speaker1, speaker2, speaker3));
+        when(productVectorService.search("loa", 20)).thenReturn(List.of());
+
+        var results = productService.searchForShop("loa", null, 0, 12);
+
+        assertEquals(List.of(speaker1, speaker2, speaker3), results.getContent());
+    }
 }
