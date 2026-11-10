@@ -22,10 +22,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                       @Param("productId") Long productId,
                                       Pageable pageable);
 
-    /** Tìm theo tên (không phân biệt hoa thường) và/hoặc theo danh mục; tham số null = bỏ qua điều kiện. */
+    /** Tìm theo tên, mô tả hoặc tên danh mục (không phân biệt hoa thường) và/hoặc theo danh mục; tham số null = bỏ qua điều kiện. */
     @Query("""
         SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        WHERE (:keyword IS NULL 
+            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR (p.description IS NOT NULL AND LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (p.category IS NOT NULL AND LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%'))))
         AND (:categoryId IS NULL OR p.category.id = :categoryId)
     """)
     Page<Product> search(@Param("keyword") String keyword,
