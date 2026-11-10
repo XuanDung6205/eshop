@@ -226,22 +226,22 @@ public class ProductRecommendationService {
         return recommendations;
     }
 
-    private static final Map<String, List<String>> COMPLEMENTARY_CATEGORIES = Map.of(
-            "bàn phím", List.of("chuột", "màn hình", "laptop", "tai nghe"),
-            "chuột", List.of("bàn phím", "màn hình", "laptop", "tai nghe"),
-            "màn hình", List.of("laptop", "chuột", "bàn phím", "loa"),
-            "laptop", List.of("chuột", "bàn phím", "màn hình", "tai nghe", "lưu trữ"),
-            "máy tính bảng", List.of("bàn phím", "tai nghe", "sạc", "điện thoại"),
-            "điện thoại", List.of("tai nghe", "sạc", "đồng hồ", "máy tính bảng"),
-            "đồng hồ", List.of("điện thoại", "tai nghe", "sạc"),
-            "tai nghe", List.of("loa", "điện thoại", "laptop", "đồng hồ"),
-            "loa", List.of("tai nghe", "điện thoại", "laptop"),
-            "máy ảnh", List.of("lưu trữ", "sạc"),
-            "thiết bị lưu trữ", List.of("laptop", "máy in", "thiết bị mạng"),
-            "thiết bị mạng", List.of("laptop", "lưu trữ", "máy in"),
-            "máy in", List.of("laptop", "lưu trữ"),
-            "phụ kiện sạc", List.of("điện thoại", "tai nghe", "đồng hồ", "laptop"),
-            "gia dụng", List.of("gia dụng")
+    private static final Map<String, List<String>> COMPLEMENTARY_CATEGORIES = Map.ofEntries(
+            Map.entry("bàn phím", List.of("chuột", "màn hình", "laptop", "tai nghe")),
+            Map.entry("chuột", List.of("bàn phím", "màn hình", "laptop", "tai nghe")),
+            Map.entry("màn hình", List.of("laptop", "chuột", "bàn phím", "loa")),
+            Map.entry("laptop", List.of("chuột", "bàn phím", "màn hình", "tai nghe", "lưu trữ")),
+            Map.entry("máy tính bảng", List.of("bàn phím", "tai nghe", "sạc", "điện thoại")),
+            Map.entry("điện thoại", List.of("tai nghe", "sạc", "đồng hồ", "máy tính bảng")),
+            Map.entry("đồng hồ", List.of("điện thoại", "tai nghe", "sạc")),
+            Map.entry("tai nghe", List.of("loa", "điện thoại", "laptop", "đồng hồ")),
+            Map.entry("loa", List.of("tai nghe", "điện thoại", "laptop")),
+            Map.entry("máy ảnh", List.of("lưu trữ", "sạc")),
+            Map.entry("thiết bị lưu trữ", List.of("laptop", "máy in", "thiết bị mạng")),
+            Map.entry("thiết bị mạng", List.of("laptop", "lưu trữ", "máy in")),
+            Map.entry("máy in", List.of("laptop", "lưu trữ")),
+            Map.entry("phụ kiện sạc", List.of("điện thoại", "tai nghe", "đồng hồ", "laptop")),
+            Map.entry("gia dụng", List.of("gia dụng"))
     );
 
     private List<Product> findComplementaryProducts(Product currentProduct, Set<Long> excludedIds, int limit) {
