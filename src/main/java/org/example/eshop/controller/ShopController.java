@@ -22,7 +22,7 @@ public class ShopController {
                         @RequestParam(required = false) Long categoryId,
                         @RequestParam(defaultValue = "0") int page,
                         Model model) {
-        model.addAttribute("products", productService.search(keyword, categoryId, page, 12));
+        model.addAttribute("products", productService.searchForShop(keyword, categoryId, page, 12));
         model.addAttribute("categories", categoryService.findAll());
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoryId", categoryId);
@@ -38,4 +38,3 @@ public class ShopController {
         return "shop/detail";
     }
 }
-

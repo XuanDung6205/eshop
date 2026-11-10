@@ -66,7 +66,9 @@
                     </span>
                 </div>
                 <div class="text-muted small">
-                    <i class="bi bi-grid-3x3-gap me-1"></i>Danh sách chuẩn
+                    <i class="bi bi-stars me-1" th:if="${keyword}"></i>
+                    <i class="bi bi-grid-3x3-gap me-1" th:unless="${keyword}"></i>
+                    <span th:text="${keyword} ? 'Tìm kiếm ngữ nghĩa bằng vector' : 'Danh sách sản phẩm'"></span>
                 </div>
             </div>
 

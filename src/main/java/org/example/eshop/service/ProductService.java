@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,9 +26,35 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+    private static final int MAX_SHOP_VECTOR_SEARCH_DOCUMENTS = 100;
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductVectorService productVectorService;
+
+    public Page<Product> searchForShop(String keyword, Long categoryId, int page, int size) {
+        String query = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        int normalizedPage = Math.max(page, 0);
+        if (query == null) {
+            return search(null, categoryId, normalizedPage, size);
+        }
+
+        long requestedDocuments = ((long) normalizedPage + 1) * size * 2;
+        int topK = categoryId == null
+                ? (int) Math.min(MAX_SHOP_VECTOR_SEARCH_DOCUMENTS, Math.max(20L, requestedDocuments))
+                : MAX_SHOP_VECTOR_SEARCH_DOCUMENTS;
+        List<Product> matches = semanticSearch(query, topK).stream()
+                .map(SemanticSearchResult::product)
+                .filter(product -> categoryId == null
+                        || product.getCategory() != null
+                        && categoryId.equals(product.getCategory().getId()))
+                .toList();
+
+        int fromIndex = (int) Math.min(matches.size(), (long) normalizedPage * size);
+        int toIndex = Math.min(fromIndex + size, matches.size());
+        return new PageImpl<>(matches.subList(fromIndex, toIndex),
+                PageRequest.of(normalizedPage, size), matches.size());
+    }
 
     public Page<Product> search(String keyword, Long categoryId, int page, int size) {
         String kw = StringUtils.hasText(keyword) ? keyword.trim() : null;

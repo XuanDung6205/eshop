@@ -22,8 +22,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 
 class ProductServiceTest {
 
@@ -85,6 +83,39 @@ class ProductServiceTest {
 
         assertEquals(2, productService.reindexAllProducts());
         verify(productVectorService).indexProducts(products);
+    }
+
+    @Test
+    void shopSearchUsesVectorsAndKeepsCategoryFilter() {
+        Product product = new Product();
+        ReflectionTestUtils.setField(product, "id", 12L);
+        Category category = mock(Category.class);
+        when(category.getId()).thenReturn(3L);
+        product.setCategory(category);
+        Product otherCategoryProduct = new Product();
+        ReflectionTestUtils.setField(otherCategoryProduct, "id", 13L);
+        Category otherCategory = mock(Category.class);
+        when(otherCategory.getId()).thenReturn(4L);
+        otherCategoryProduct.setCategory(otherCategory);
+        Document categoryMatch = Document.builder().id("phone-name").text("Phone A")
+                .metadata(Map.of("productId", 12L, "sourceType", "NAME"))
+                .score(0.94).build();
+        Document otherCategoryMatch = Document.builder().id("other-phone-name").text("Phone B")
+                .metadata(Map.of("productId", 13L, "sourceType", "NAME"))
+                .score(0.93).build();
+        when(productVectorService.search("phone camera", 100))
+                .thenReturn(List.of(categoryMatch, otherCategoryMatch));
+        when(productRepository.findAllById(List.of(12L, 13L)))
+                .thenReturn(List.of(product, otherCategoryProduct));
+
+        var results = productService.searchForShop(" phone camera ", 3L, 0, 12);
+
+        assertEquals(List.of(product), results.getContent());
+        assertEquals(1, results.getTotalElements());
+        verify(productVectorService).search("phone camera", 100);
+        verify(productRepository, never()).search(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test
