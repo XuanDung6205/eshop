@@ -193,18 +193,11 @@ public class ProductRecommendationService {
         List<Product> recommendations = new ArrayList<>();
         Set<Long> collectedIds = new HashSet<>(excludedProductIds);
 
-        // 1. Primary: vector similarity recommendations (personalized by AI & user behavior)
-        List<Product> vectorRecs = findVectorRecommendations(interestQuery, excludedProductIds, product);
-        for (Product p : vectorRecs) {
-            if (collectedIds.add(p.getId())) {
-                recommendations.add(p);
-            }
-        }
-
-        // 2. Same-category products (substitutes / alternatives in the same category)
-        if (product.getCategory() != null && recommendations.size() < 4) {
+        // 1. TẦNG 1 (Ưu tiên cao nhất): TẤT CẢ sản phẩm cùng danh mục trong kho (substitutes)
+        // Ví dụ: Xem Chuột -> hiển thị toàn bộ các mẫu Chuột còn lại của shop trước tiên
+        if (product.getCategory() != null) {
             List<Product> sameCategory = productRepository.findRelatedProducts(
-                    product.getCategory().getId(), product.getId(), PageRequest.of(0, 4));
+                    product.getCategory().getId(), product.getId(), PageRequest.of(0, 10));
             for (Product p : sameCategory) {
                 if (isInStock(p) && collectedIds.add(p.getId())) {
                     recommendations.add(p);
@@ -212,7 +205,21 @@ public class ProductRecommendationService {
             }
         }
 
-        // 3. Complementary / Cross-category products (e.g. Bàn phím -> Chuột, Màn hình, Laptop)
+        // 2. TẦNG 2: Gợi ý theo AI Vector Search & Lịch sử hành vi người dùng (personalized)
+        if (recommendations.size() < 8) {
+            List<Product> vectorRecs = findVectorRecommendations(interestQuery, excludedProductIds, product);
+            for (Product p : vectorRecs) {
+                if (collectedIds.add(p.getId())) {
+                    recommendations.add(p);
+                    if (recommendations.size() >= 8) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. TẦNG 3: Sản phẩm bổ trợ / Mua cùng theo hệ sinh thái (Complementary / Cross-category)
+        // Ví dụ: Bàn phím -> gợi ý Chuột, Màn hình, Laptop
         if (recommendations.size() < 8 && product.getCategory() != null) {
             int needed = 8 - recommendations.size();
             List<Product> complementary = findComplementaryProducts(product, collectedIds, needed);
