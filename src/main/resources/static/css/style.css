@@ -371,6 +371,22 @@ main.container {
     color: #1e293b;
 }
 
+.eshop-chat__message a {
+    color: #0b5ed7;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.eshop-chat__message a:hover {
+    color: #084db2;
+}
+
+.eshop-chat__message strong {
+    font-weight: 700;
+    color: #0f172a;
+}
+
 .eshop-chat__message--user {
     align-self: flex-end;
     border: none;

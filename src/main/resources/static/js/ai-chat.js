@@ -37,10 +37,42 @@
         else launcher.focus();
     }
 
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatMarkdown(text) {
+        if (!text) return "";
+        let escaped = escapeHtml(text);
+
+        // Bold: **text**
+        escaped = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+        // Links: [label](url)
+        escaped = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+            const cleanUrl = url.trim();
+            if (cleanUrl.startsWith("/") || cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+                return `<a href="${cleanUrl}">${label}</a>`;
+            }
+            return label;
+        });
+
+        return escaped;
+    }
+
     function addMessage(text, kind, sources = []) {
         const bubble = document.createElement("article");
         bubble.className = `eshop-chat__message eshop-chat__message--${kind}`;
-        bubble.textContent = text;
+        if (kind === "assistant") {
+            bubble.innerHTML = formatMarkdown(text);
+        } else {
+            bubble.textContent = text;
+        }
 
         const validSources = Array.isArray(sources) ? sources.filter(source =>
             source && typeof source.name === "string" && typeof source.url === "string"
