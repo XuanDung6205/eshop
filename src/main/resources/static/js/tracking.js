@@ -30,7 +30,7 @@
     const pagePath = window.location.pathname;
 
     function send(eventType, details = {}) {
-        fetch(endpoint, {
+        return fetch(endpoint, {
             method: "POST",
             credentials: "same-origin",
             keepalive: true,
@@ -48,12 +48,56 @@
         }).catch(() => {});
     }
 
+    function refreshRecommendations(productId) {
+        const recommendationEndpoint = document.body.dataset.trackRecommendationsUrl;
+        const container = document.getElementById("recommendation-container");
+        if (!recommendationEndpoint || !container || !productId) return;
+
+        const current = container.querySelector("#product-recommendations");
+        let loadingIndicator = null;
+        if (current) {
+            current.style.transition = "opacity 0.25s ease";
+            current.style.opacity = "0.6";
+        } else if (!container.querySelector("#recommendation-loading")) {
+            loadingIndicator = document.createElement("div");
+            loadingIndicator.id = "recommendation-loading";
+            loadingIndicator.className = "text-center py-4 text-muted small";
+            loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang cập nhật gợi ý phù hợp...';
+            container.appendChild(loadingIndicator);
+        }
+
+        const url = new URL(recommendationEndpoint, window.location.origin);
+        url.searchParams.set("productId", productId);
+        url.searchParams.set("sessionId", sessionId);
+        fetch(url, {credentials: "same-origin"})
+            .then(response => response.ok ? response.text() : "")
+            .then(html => {
+                if (loadingIndicator) loadingIndicator.remove();
+                const parsed = new DOMParser().parseFromString(html, "text/html");
+                const updated = parsed.getElementById("product-recommendations");
+                const latestCurrent = container.querySelector("#product-recommendations");
+                if (updated) {
+                    if (latestCurrent) latestCurrent.replaceWith(updated);
+                    else container.appendChild(updated);
+                } else if (latestCurrent) {
+                    latestCurrent.remove();
+                }
+            })
+            .catch(() => {
+                if (loadingIndicator) loadingIndicator.remove();
+                const latestCurrent = container.querySelector("#product-recommendations");
+                if (latestCurrent) latestCurrent.style.opacity = "1";
+            });
+    }
+
     if (page) {
         send("PAGE_VIEW");
     }
     if (page === "product-detail") {
         const productId = positiveId(document.body.dataset.trackProductId);
-        if (productId) send("PRODUCT_VIEW", {productId});
+        if (productId) {
+            send("PRODUCT_VIEW", {productId}).then(() => refreshRecommendations(productId));
+        }
     }
     if (page === "products") {
         const keyword = document.body.dataset.trackKeyword?.trim().slice(0, 200);

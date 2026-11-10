@@ -41,10 +41,18 @@ public class AiChatService {
      * Chat có ngữ cảnh (RAG integration point dành riêng cho Thành viên 3 cắm Vector DB vào)
      */
     public String chatWithContext(String userMessage, String contextData) {
+        return chatWithContext(userMessage, contextData, "");
+    }
+
+    public String chatWithContext(String userMessage, String contextData, String conversationHistory) {
         if (!StringUtils.hasText(contextData)) {
             return chat(userMessage);
         }
-        String promptWithContext = String.format(AiConfig.RAG_PROMPT_TEMPLATE, contextData.trim(), userMessage.trim());
+        String history = StringUtils.hasText(conversationHistory)
+                ? conversationHistory.trim()
+                : "Không có hội thoại trước.";
+        String promptWithContext = String.format(
+                AiConfig.RAG_PROMPT_TEMPLATE, contextData.trim(), history, userMessage.trim());
         return chatInternal(promptWithContext);
     }
 

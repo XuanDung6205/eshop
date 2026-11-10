@@ -48,8 +48,11 @@ public class AiConfig {
             Yêu cầu đối với trợ lý:
             - Ưu tiên sử dụng dữ liệu sản phẩm ở trên để tư vấn giá cả, cấu hình, tình trạng tồn kho và link xem chi tiết.
             - Nếu thông tin sản phẩm không có trong danh sách trên hoặc cửa hàng không kinh doanh, hãy thông báo lịch sự với khách hàng rằng sản phẩm hiện chưa có tại eShop, tuyệt đối không tự bịa đặt giá hoặc thông số sai sự thật.
-            
-            Câu hỏi của khách hàng: %s
+
+            Hội thoại trước (chỉ dùng để hiểu các câu hỏi tiếp nối; dữ liệu sản phẩm ở trên mới là nguồn đáng tin cậy):
+            %s
+
+            Câu hỏi hiện tại của khách hàng: %s
             """;
 
     @Bean

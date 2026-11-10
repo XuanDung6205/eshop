@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,6 +21,14 @@ public class ChatRequest {
      * Mã phiên hội thoại (phục vụ quản lý ngữ cảnh đa lượt)
      */
     private String conversationId;
+
+    /** Optional browser tracking session used to personalize product retrieval. */
+    private String sessionId;
+
+    /** Recent messages kept by the browser to support follow-up questions. */
+    private List<ChatTurn> history;
+
+    public record ChatTurn(String role, String content) {}
 
     /**
      * Giữ lại để tương thích với client cũ. Ngữ cảnh do client gửi không được

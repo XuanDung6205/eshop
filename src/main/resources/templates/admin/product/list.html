@@ -50,7 +50,7 @@
         <tbody>
         <tr th:each="p : ${products.content}">
             <td th:text="${p.id}"></td>
-            <td><img class="thumb rounded" th:src="${p.imageUrl}" alt=""></td>
+            <td><img class="thumb rounded border shadow-sm" th:src="${p.displayImageUrl}" onerror="this.onerror=null; this.src='/images/product-placeholder.svg';" alt=""></td>
             <td th:text="${p.name}"></td>
             <td th:text="${p.category.name}"></td>
             <td class="text-end" th:text="${#numbers.formatDecimal(p.price, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></td>

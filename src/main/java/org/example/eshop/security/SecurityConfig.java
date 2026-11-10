@@ -78,6 +78,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/error", "/403").permitAll()
                         .requestMatchers("/", "/products", "/products/**", "/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/tracking/recommendations").permitAll()
                         .requestMatchers(HttpMethod.POST, "/tracking/events").permitAll()
                         .requestMatchers("/register").hasRole("GUEST")
                         .requestMatchers("/admin/**").hasRole("SELLER")

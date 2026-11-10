@@ -7,58 +7,90 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <meta name="_tracking_endpoint" th:content="@{/tracking/events}">
     <title th:text="${title} + ' | eShop'">eShop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link th:href="@{/css/style.css}" rel="stylesheet">
 </head>
 <body>
-<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark modern-navbar sticky-top mb-4">
     <div class="container">
-        <a class="navbar-brand fw-bold" th:href="@{/}">🛒 eShop</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" th:href="@{/}">
+            <span class="brand-icon"><i class="bi bi-cart4"></i></span>
+            <span class="brand-text">eShop</span>
+            <span class="badge bg-light text-primary brand-badge d-none d-sm-inline-block">Tech & AI</span>
+        </a>
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" th:href="@{/products}">Sản phẩm</a></li>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/products}">
+                        <i class="bi bi-grid-fill me-1"></i>Sản phẩm
+                    </a>
+                </li>
                 <!-- Chỉ SELLER -->
                 <li class="nav-item dropdown" sec:authorize="hasRole('SELLER')">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Quản trị</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" th:href="@{/admin/categories}">Danh mục</a></li>
-                        <li><a class="dropdown-item" th:href="@{/admin/products}">Sản phẩm</a></li>
-                        <li><a class="dropdown-item" th:href="@{/admin/orders}">Đơn hàng</a></li>
-                        <li><a class="dropdown-item" th:href="@{/admin/users}">Tài khoản</a></li>
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-shield-lock-fill me-1"></i>Quản trị
+                    </a>
+                    <ul class="dropdown-menu shadow-sm border-0 rounded-3">
+                        <li><a class="dropdown-item py-2" th:href="@{/admin/categories}"><i class="bi bi-tags me-2 text-primary"></i>Danh mục</a></li>
+                        <li><a class="dropdown-item py-2" th:href="@{/admin/products}"><i class="bi bi-box-seam me-2 text-primary"></i>Sản phẩm</a></li>
+                        <li><a class="dropdown-item py-2" th:href="@{/admin/orders}"><i class="bi bi-receipt me-2 text-primary"></i>Đơn hàng</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2" th:href="@{/admin/users}"><i class="bi bi-people me-2 text-primary"></i>Tài khoản</a></li>
                     </ul>
                 </li>
                 <!-- Chỉ CUSTOMER -->
                 <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
-                    <a class="nav-link" th:href="@{/orders/my}">Đơn hàng của tôi</a>
+                    <a class="nav-link" th:href="@{/orders/my}">
+                        <i class="bi bi-bag-check-fill me-1"></i>Đơn hàng của tôi
+                    </a>
                 </li>
             </ul>
-            <form class="d-flex" th:action="@{/products}" method="get">
-                <input class="form-control me-2" name="keyword" placeholder="Tìm sản phẩm..." th:value="${keyword}">
-                <button class="btn btn-light" type="submit">Tìm</button>
+            <form class="d-flex my-2 my-lg-0 nav-search-form me-lg-3" th:action="@{/products}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted ps-3 rounded-start-pill">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input class="form-control border-start-0 pe-3 rounded-end-pill nav-search-input"
+                           name="keyword" placeholder="Tìm sản phẩm, chuột, phím..." th:value="${keyword}">
+                </div>
             </form>
-            <ul class="navbar-nav ms-3">
-                <!-- GUEST và CUSTOMER thấy giỏ hàng (GUEST bấm vào sẽ được mời đăng nhập) -->
-                <li class="nav-item" sec:authorize="!hasRole('SELLER')">
-                    <a class="nav-link" th:href="@{/cart}">Giỏ hàng
-                        <span class="badge bg-warning text-dark" th:text="${cartCount}">0</span></a>
+            <ul class="navbar-nav align-items-lg-center">
+                <!-- GUEST và CUSTOMER thấy giỏ hàng -->
+                <li class="nav-item me-lg-2" sec:authorize="!hasRole('SELLER')">
+                    <a class="nav-link btn-cart-nav position-relative px-3 py-2 rounded-pill" th:href="@{/cart}">
+                        <i class="bi bi-cart3 fs-5 me-1"></i>
+                        <span class="d-lg-none">Giỏ hàng</span>
+                        <span class="badge rounded-pill bg-warning text-dark fw-bold ms-1" th:text="${cartCount}">0</span>
+                    </a>
                 </li>
                 <!-- Chỉ GUEST -->
-                <li class="nav-item" sec:authorize="hasRole('GUEST')"><a class="nav-link" th:href="@{/login}">Đăng nhập</a></li>
-                <li class="nav-item" sec:authorize="hasRole('GUEST')"><a class="nav-link" th:href="@{/register}">Đăng ký</a></li>
+                <li class="nav-item" sec:authorize="hasRole('GUEST')">
+                    <a class="nav-link text-white-50 hover-white" th:href="@{/login}">Đăng nhập</a>
+                </li>
+                <li class="nav-item ms-lg-1" sec:authorize="hasRole('GUEST')">
+                    <a class="btn btn-sm btn-light fw-semibold rounded-pill px-3 py-1" th:href="@{/register}">Đăng ký</a>
+                </li>
                 <!-- Đã đăng nhập -->
-                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        👤 <span sec:authentication="name"></span>
+                <li class="nav-item dropdown ms-lg-2" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 user-menu-toggle px-3 py-1 rounded-pill" href="#" data-bs-toggle="dropdown">
+                        <span class="user-avatar-badge"><i class="bi bi-person-fill"></i></span>
+                        <span class="fw-semibold" sec:authentication="name"></span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
                         <li><span class="dropdown-item-text small text-muted" sec:authentication="principal.authorities"></span></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
-                            <!-- Logout phải là POST để có CSRF token -->
                             <form th:action="@{/logout}" method="post">
-                                <button class="dropdown-item">Đăng xuất</button>
+                                <button class="dropdown-item text-danger d-flex align-items-center gap-2">
+                                    <i class="bi bi-box-arrow-right"></i>Đăng xuất
+                                </button>
                             </form>
                         </li>
                     </ul>
@@ -79,10 +111,98 @@
     </div>
 </div>
 
-<footer th:fragment="footer" class="border-top mt-5 py-3 text-center text-muted small">
-    eShop – Demo Spring Boot · Thymeleaf · JPA · MariaDB
+<footer th:fragment="footer" class="modern-footer mt-5 pt-4 pb-3 border-top bg-white">
+    <div class="container">
+        <div class="row g-4 py-3 border-bottom mb-3 text-muted small">
+            <div class="col-md-3 d-flex align-items-center gap-3">
+                <i class="bi bi-truck text-primary fs-3"></i>
+                <div>
+                    <strong class="d-block text-dark">Giao hàng hỏa tốc</strong>
+                    <span>Nhanh chóng trong 2h nội thành</span>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-center gap-3">
+                <i class="bi bi-shield-check text-primary fs-3"></i>
+                <div>
+                    <strong class="d-block text-dark">Chính hãng 100%</strong>
+                    <span>Bảo hành chính hãng 12-24 tháng</span>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-center gap-3">
+                <i class="bi bi-arrow-repeat text-primary fs-3"></i>
+                <div>
+                    <strong class="d-block text-dark">Đổi trả tiện lợi</strong>
+                    <span>30 ngày đổi mới nếu có lỗi NSX</span>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-center gap-3">
+                <i class="bi bi-cpu text-primary fs-3"></i>
+                <div>
+                    <strong class="d-block text-dark">Gợi ý AI thông minh</strong>
+                    <span>Vector search & gợi ý theo sở thích</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center text-muted small pt-2">
+            <div>
+                © 2026 <strong>eShop</strong>. Phát triển trên Spring Boot · Thymeleaf · MariaDB Vector Store · Gemini AI.
+            </div>
+            <div class="d-flex gap-3">
+                <span class="badge bg-light text-secondary border">Branch: member 5</span>
+                <span class="badge bg-light text-success border"><i class="bi bi-check-circle me-1"></i>Hệ thống sẵn sàng</span>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/tracking.js}"></script>
+    <section id="eshop-ai-chat" class="eshop-chat" th:attr="data-chat-endpoint=@{/api/chat}"
+             sec:authorize="!hasRole('SELLER')">
+        <button class="eshop-chat__launcher" type="button" aria-controls="eshop-chat-panel"
+                aria-expanded="false" aria-label="Mở tư vấn AI">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 5.75A2.75 2.75 0 0 1 6.75 3h10.5A2.75 2.75 0 0 1 20 5.75v7.5A2.75 2.75 0 0 1 17.25 16H10l-5.4 4.05a.4.4 0 0 1-.64-.32V16.7A2.75 2.75 0 0 1 4 13.25z"/>
+                <path d="M8 8h8M8 11.5h5"/>
+            </svg>
+            <span>Hỏi eShop AI</span>
+        </button>
+
+        <section id="eshop-chat-panel" class="eshop-chat__panel" role="dialog"
+                 aria-label="Tư vấn sản phẩm eShop" aria-hidden="true" hidden>
+            <header class="eshop-chat__header">
+                <div class="eshop-chat__avatar" aria-hidden="true">AI</div>
+                <div class="eshop-chat__heading">
+                    <h2>Tư vấn eShop</h2>
+                    <p>Hỏi về sản phẩm, giá và tồn kho</p>
+                </div>
+                <button class="eshop-chat__close" type="button" aria-label="Đóng cửa sổ chat">×</button>
+            </header>
+
+            <div class="eshop-chat__messages" role="log" aria-live="polite" aria-relevant="additions text">
+                <article class="eshop-chat__message eshop-chat__message--assistant">
+                    Chào bạn! Bạn đang tìm sản phẩm nào, hoặc cần tư vấn theo nhu cầu và ngân sách?
+                </article>
+            </div>
+
+            <div class="eshop-chat__suggestions" aria-label="Câu hỏi gợi ý">
+                <button type="button" data-chat-prompt="Tư vấn điện thoại chụp ảnh tốt dưới 20 triệu">Điện thoại chụp ảnh tốt</button>
+                <button type="button" data-chat-prompt="Gợi ý laptop cho học tập và làm việc">Laptop học tập, làm việc</button>
+            </div>
+
+            <p class="eshop-chat__status" role="status" aria-live="polite"></p>
+            <form class="eshop-chat__form">
+                <label class="visually-hidden" for="eshop-chat-input">Tin nhắn của bạn</label>
+                <textarea id="eshop-chat-input" name="message" rows="1" maxlength="1000"
+                          placeholder="Nhập câu hỏi của bạn..." required></textarea>
+                <button class="eshop-chat__send" type="submit" aria-label="Gửi tin nhắn">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="m4 4 17 8-17 8 3-8zM7 12h14"/>
+                    </svg>
+                </button>
+            </form>
+            <p class="eshop-chat__disclaimer">AI tham khảo danh mục eShop; vui lòng kiểm tra thông tin sản phẩm trước khi đặt mua.</p>
+        </section>
+    </section>
+    <script th:src="@{/js/ai-chat.js}"></script>
 </footer>
 </body>
 </html>

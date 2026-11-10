@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class TrackingService {
     private static final Logger log = LoggerFactory.getLogger(TrackingService.class);
-    private static final Pattern SESSION_ID = Pattern.compile("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}");
+    private static final Pattern SESSION_ID = Pattern.compile(TrackingEventRequest.UUID_PATTERN);
 
     private final TrackingEventRepository eventRepository;
     private final UserRepository userRepository;

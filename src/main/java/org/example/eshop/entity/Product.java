@@ -47,5 +47,23 @@ public class Product {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    /**
+     * Trả về ảnh hiển thị cho sản phẩm.
+     * Nếu chưa có ảnh trong DB thì tự động nhận diện từ khoá tên/danh mục để gán ảnh mẫu sắc nét.
+     */
+    public String getDisplayImageUrl() {
+        if (id != null && id >= 1 && id <= 50) {
+            return "/images/products/" + id + ".jpg";
+        }
+        if (imageUrl != null && !imageUrl.isBlank()
+                && imageUrl.startsWith("http")
+                && !imageUrl.contains("placehold.co")
+                && !imageUrl.contains("placeholder")
+                && !imageUrl.contains("via.placeholder")) {
+            return imageUrl;
+        }
+        return "/images/product-placeholder.svg";
+    }
 }
 

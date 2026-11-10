@@ -4,6 +4,9 @@ import org.example.eshop.dto.ProductReference;
 import org.example.eshop.entity.Product;
 import org.example.eshop.repository.ProductRepository;
 import org.springframework.ai.document.Document;
+import org.springframework.data.domain.PageRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,6 +16,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Application service for the product RAG flow.
@@ -24,7 +30,10 @@ import java.util.Map;
 @Service
 public class ProductAssistantService {
 
-    private static final int DEFAULT_TOP_K = 5;
+    private static final Logger log = LoggerFactory.getLogger(ProductAssistantService.class);
+    private static final int VECTOR_SEARCH_LIMIT = 5;
+    private static final int SOURCE_LIMIT = 5;
+    private static final double MIN_SIMILARITY = 0.55;
     private static final String NO_RESULTS_MESSAGE =
             "Mình chưa tìm thấy sản phẩm phù hợp với câu hỏi của bạn trong eShop. "
                     + "Bạn có thể cho mình biết thêm loại sản phẩm, nhu cầu hoặc khoảng giá không?";
@@ -49,22 +58,81 @@ public class ProductAssistantService {
      */
     @Transactional(readOnly = true)
     public RagAnswer ask(String question) {
+        return ask(question, question);
+    }
+
+    @Transactional(readOnly = true)
+    public RagAnswer ask(String question, String retrievalQuery) {
+        return ask(question, retrievalQuery, List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public RagAnswer ask(String question, String retrievalQuery, List<org.example.eshop.dto.ChatRequest.ChatTurn> history) {
         if (!StringUtils.hasText(question)) {
             throw new IllegalArgumentException("Nội dung câu hỏi không được để trống");
         }
 
-        List<Document> matches = productVectorService.search(question.trim(), DEFAULT_TOP_K);
-        List<ProductReference> sources = loadCurrentSources(matches);
+        String query = StringUtils.hasText(retrievalQuery) ? retrievalQuery : question;
+        String historyText = formatHistory(history);
+        Set<Long> currentQuestionCategories = findMentionedCategories(question);
+        Set<Long> historyCategories = findMentionedCategories(historyText);
+        // A clear category in the latest question must override older conversation topics.
+        Set<Long> requestedCategories = currentQuestionCategories.isEmpty()
+                ? historyCategories
+                : currentQuestionCategories;
+        List<Document> matches;
+        try {
+            matches = productVectorService.search(query.trim(), VECTOR_SEARCH_LIMIT);
+        } catch (RuntimeException exception) {
+            log.warn("Vector retrieval unavailable for chat; using category fallback when possible ({})",
+                    exception.getClass().getSimpleName());
+            matches = List.of();
+        }
+        List<ProductReference> sources = loadCurrentSources(matches, requestedCategories);
+        if (!requestedCategories.isEmpty() && sources.size() < SOURCE_LIMIT) {
+            sources = appendCategoryProducts(sources, requestedCategories);
+        }
         if (sources.isEmpty()) {
             return new RagAnswer(NO_RESULTS_MESSAGE, List.of());
         }
 
         String context = buildContext(sources);
-        String reply = aiChatService.chatWithContext(question.trim(), context);
+        String reply = aiChatService.chatWithContext(question.trim(), context, historyText);
         return new RagAnswer(reply, sources);
     }
 
-    private List<ProductReference> loadCurrentSources(List<Document> matches) {
+    private Set<Long> findMentionedCategories(String text) {
+        if (!StringUtils.hasText(text)) {
+            return Set.of();
+        }
+        return Set.copyOf(productRepository.findCategoryIdsMentionedInQuery(text.toLowerCase(Locale.ROOT)));
+    }
+
+    private String formatHistory(List<org.example.eshop.dto.ChatRequest.ChatTurn> history) {
+        if (history == null || history.isEmpty()) {
+            return "";
+        }
+        StringBuilder transcript = new StringBuilder();
+        history.stream()
+                .skip(Math.max(0, history.size() - 8L))
+                .filter(turn -> turn != null && StringUtils.hasText(turn.role())
+                        && StringUtils.hasText(turn.content()))
+                .filter(turn -> "user".equals(turn.role()) || "assistant".equals(turn.role()))
+                .forEach(turn -> {
+                    String content = turn.content().trim();
+                    if (content.length() > 800) {
+                        content = content.substring(0, 800);
+                    }
+                    if (!transcript.isEmpty()) {
+                        transcript.append('\n');
+                    }
+                    transcript.append("user".equals(turn.role()) ? "Khách: " : "Trợ lý: ")
+                            .append(content);
+                });
+        return transcript.toString();
+    }
+
+    private List<ProductReference> loadCurrentSources(List<Document> matches, Set<Long> requestedCategories) {
         if (matches == null || matches.isEmpty()) {
             return List.of();
         }
@@ -88,8 +156,34 @@ public class ProductAssistantService {
         List<ProductReference> sources = new ArrayList<>();
         for (Map.Entry<Long, Double> entry : scoresByProductId.entrySet()) {
             Product product = productsById.get(entry.getKey());
-            if (product != null) {
+            if (product != null && product.getQuantity() != null && product.getQuantity() > 0
+                    && (requestedCategories.isEmpty() || (product.getCategory() != null
+                    && requestedCategories.contains(product.getCategory().getId())))
+                    && (entry.getValue() == null || entry.getValue() >= MIN_SIMILARITY
+                    || !requestedCategories.isEmpty())) {
                 sources.add(toReference(product, entry.getValue()));
+            }
+            if (sources.size() == SOURCE_LIMIT) {
+                break;
+            }
+        }
+        return List.copyOf(sources);
+    }
+
+    private List<ProductReference> appendCategoryProducts(List<ProductReference> initial,
+                                                           Set<Long> requestedCategories) {
+        List<ProductReference> sources = new ArrayList<>(initial);
+        Set<Long> existingIds = new java.util.HashSet<>();
+        sources.stream().map(ProductReference::id).filter(Objects::nonNull).forEach(existingIds::add);
+        for (Long categoryId : requestedCategories) {
+            for (Product product : productRepository.findInStockByCategoryId(
+                    categoryId, PageRequest.of(0, SOURCE_LIMIT))) {
+                if (existingIds.add(product.getId())) {
+                    sources.add(toReference(product, null));
+                    if (sources.size() == SOURCE_LIMIT) {
+                        return List.copyOf(sources);
+                    }
+                }
             }
         }
         return List.copyOf(sources);

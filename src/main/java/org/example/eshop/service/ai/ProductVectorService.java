@@ -60,14 +60,22 @@ public class ProductVectorService {
     }
 
     public List<Document> search(String query, int topK) {
+        return search(query, topK, 0.0);
+    }
+
+    public List<Document> search(String query, int topK, double similarityThreshold) {
         if (!StringUtils.hasText(query)) {
             throw new IllegalArgumentException("Từ khóa tìm kiếm không được để trống");
         }
         if (topK < 1) {
             throw new IllegalArgumentException("Số kết quả phải lớn hơn 0");
         }
+        if (similarityThreshold < 0.0 || similarityThreshold > 1.0) {
+            throw new IllegalArgumentException("Ngưỡng tương đồng phải nằm trong khoảng từ 0 đến 1");
+        }
         return vectorStore.similaritySearch(
-                SearchRequest.builder().query(query.trim()).topK(topK).build()
+                SearchRequest.builder().query(query.trim()).topK(topK)
+                        .similarityThreshold(similarityThreshold).build()
         );
     }
 

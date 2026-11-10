@@ -11,7 +11,7 @@ import java.time.Instant;
 
 public record TrackingEventRequest(
         @NotNull TrackingEventType eventType,
-        @NotBlank @Pattern(regexp = "[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String sessionId,
+        @NotBlank @Pattern(regexp = TrackingEventRequest.UUID_PATTERN) String sessionId,
         @NotNull Instant occurredAt,
         @Positive Long productId,
         @Positive Long categoryId,
@@ -20,4 +20,7 @@ public record TrackingEventRequest(
         @PositiveOrZero Integer quantity,
         @Size(max = 200) @Pattern(regexp = "/[^?#]*") String pagePath
 ) {
+    /** UUID v4 pattern — reused by TrackingService and TrackingRecommendationController. */
+    public static final String UUID_PATTERN =
+            "[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}";
 }
