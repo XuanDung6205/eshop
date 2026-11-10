@@ -1,6 +1,7 @@
 package org.example.eshop.service.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.example.eshop.config.AiConfig;
 import org.slf4j.Logger;
@@ -147,10 +148,19 @@ public class AiChatService {
 
         if (response != null && response.getCandidates() != null && !response.getCandidates().isEmpty()) {
             GeminiCandidate candidate = response.getCandidates().get(0);
+            if (candidate.getFinishReason() != null && !"STOP".equalsIgnoreCase(candidate.getFinishReason())) {
+                log.warn("Gemini phản hồi dừng bất thường [finishReason: {}]", candidate.getFinishReason());
+            }
             if (candidate.getContent() != null && candidate.getContent().getParts() != null && !candidate.getContent().getParts().isEmpty()) {
-                String reply = candidate.getContent().getParts().get(0).getText();
+                StringBuilder replyBuilder = new StringBuilder();
+                for (GeminiPart part : candidate.getContent().getParts()) {
+                    if (part != null && !Boolean.TRUE.equals(part.getThought()) && StringUtils.hasText(part.getText())) {
+                        replyBuilder.append(part.getText());
+                    }
+                }
+                String reply = replyBuilder.toString().trim();
                 if (StringUtils.hasText(reply)) {
-                    return reply.trim();
+                    return reply;
                 }
             }
         }
@@ -227,6 +237,8 @@ public class AiChatService {
         public void setGenerationConfig(GeminiGenerationConfig generationConfig) { this.generationConfig = generationConfig; }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class GeminiContent {
         private String role;
         private List<GeminiPart> parts;
@@ -248,8 +260,11 @@ public class AiChatService {
         public void setParts(List<GeminiPart> parts) { this.parts = parts; }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class GeminiPart {
         private String text;
+        private Boolean thought;
 
         public GeminiPart() {}
 
@@ -259,10 +274,14 @@ public class AiChatService {
 
         public String getText() { return text; }
         public void setText(String text) { this.text = text; }
+        public Boolean getThought() { return thought; }
+        public void setThought(Boolean thought) { this.thought = thought; }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class GeminiGenerationConfig {
         private Double temperature;
+        private Integer maxOutputTokens = 2048;
 
         public GeminiGenerationConfig() {}
 
@@ -272,6 +291,8 @@ public class AiChatService {
 
         public Double getTemperature() { return temperature; }
         public void setTemperature(Double temperature) { this.temperature = temperature; }
+        public Integer getMaxOutputTokens() { return maxOutputTokens; }
+        public void setMaxOutputTokens(Integer maxOutputTokens) { this.maxOutputTokens = maxOutputTokens; }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

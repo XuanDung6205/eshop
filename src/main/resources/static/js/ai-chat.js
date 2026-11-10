@@ -11,9 +11,13 @@
     const sendButton = root.querySelector(".eshop-chat__send");
     const status = root.querySelector(".eshop-chat__status");
     const endpoint = root.dataset.chatEndpoint;
+    const CHAT_STORAGE_KEY = "eshop.chatHistory";
+    const MAX_STORED_MESSAGES = 40;
+
     let sessionId = getSessionId();
     let inFlight = false;
     const history = [];
+    const storedMessages = [];
 
     function getSessionId() {
         try {
@@ -28,13 +32,57 @@
         }
     }
 
+    function saveStoredMessages() {
+        try {
+            const payload = {
+                sessionId,
+                messages: storedMessages.slice(-MAX_STORED_MESSAGES)
+            };
+            sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(payload));
+        } catch (_) {
+            // Bỏ qua nếu trình duyệt chặn sessionStorage hoặc hết dung lượng
+        }
+    }
+
+    function restoreChatHistory() {
+        try {
+            const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (!parsed || parsed.sessionId !== sessionId || !Array.isArray(parsed.messages)) {
+                return;
+            }
+            for (const item of parsed.messages) {
+                if (!item || (item.kind !== "user" && item.kind !== "assistant") || typeof item.text !== "string") {
+                    continue;
+                }
+                addMessage(item.text, item.kind, item.sources || [], false);
+                storedMessages.push({
+                    kind: item.kind,
+                    text: item.text,
+                    sources: Array.isArray(item.sources) ? item.sources : []
+                });
+                history.push({role: item.kind, content: item.text});
+            }
+            if (history.length > 8) {
+                history.splice(0, history.length - 8);
+            }
+        } catch (_) {
+            // Bỏ qua nếu dữ liệu lưu trữ bị lỗi định dạng
+        }
+    }
+
     function setOpen(open) {
         panel.hidden = !open;
         panel.setAttribute("aria-hidden", String(!open));
         launcher.setAttribute("aria-expanded", String(open));
         launcher.setAttribute("aria-label", open ? "Đóng tư vấn AI" : "Mở tư vấn AI");
-        if (open) input.focus();
-        else launcher.focus();
+        if (open) {
+            messages.scrollTop = messages.scrollHeight;
+            input.focus();
+        } else {
+            launcher.focus();
+        }
     }
 
     function escapeHtml(str) {
@@ -65,7 +113,7 @@
         return escaped;
     }
 
-    function addMessage(text, kind, sources = []) {
+    function addMessage(text, kind, sources = [], persist = false) {
         const bubble = document.createElement("article");
         bubble.className = `eshop-chat__message eshop-chat__message--${kind}`;
         if (kind === "assistant") {
@@ -101,6 +149,19 @@
 
         messages.appendChild(bubble);
         messages.scrollTop = messages.scrollHeight;
+
+        if (persist) {
+            storedMessages.push({
+                kind,
+                text,
+                sources: validSources
+            });
+            if (storedMessages.length > MAX_STORED_MESSAGES) {
+                storedMessages.splice(0, storedMessages.length - MAX_STORED_MESSAGES);
+            }
+            saveStoredMessages();
+        }
+
         return bubble;
     }
 
@@ -112,8 +173,8 @@
         status.textContent = "";
         sendButton.disabled = true;
         input.disabled = true;
-        addMessage(question, "user");
-        const pending = addMessage("Đang tìm sản phẩm phù hợp…", "assistant");
+        addMessage(question, "user", [], true);
+        const pending = addMessage("Đang tìm sản phẩm phù hợp…", "assistant", [], false);
         pending.classList.add("eshop-chat__message--pending");
 
         try {
@@ -128,7 +189,7 @@
             if (typeof data.reply !== "string" || !data.reply.trim()) {
                 throw new Error("empty_reply");
             }
-            addMessage(data.reply, "assistant", data.sources);
+            addMessage(data.reply, "assistant", data.sources, true);
             history.push({role: "user", content: question}, {role: "assistant", content: data.reply});
             if (history.length > 8) history.splice(0, history.length - 8);
         } catch (_) {
@@ -141,6 +202,18 @@
             input.focus();
         }
     }
+
+    // Khôi phục lịch sử chat khi chuyển trang trong cùng phiên làm việc
+    restoreChatHistory();
+
+    // Xóa lịch sử chat khi người dùng đăng xuất
+    document.querySelectorAll('form[action$="/logout"]').forEach(logoutForm => {
+        logoutForm.addEventListener("submit", () => {
+            try {
+                sessionStorage.removeItem(CHAT_STORAGE_KEY);
+            } catch (_) {}
+        });
+    });
 
     launcher.addEventListener("click", () => setOpen(panel.hidden));
     closeButton.addEventListener("click", () => setOpen(false));
