@@ -6,7 +6,7 @@
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <meta name="_tracking_endpoint" th:content="@{/tracking/events}">
-    <title th:text="${title} + ' | eShop'">eShop</title>
+    <title th:text="${title} + ' | DecorHome'">DecorHome</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,9 +18,9 @@
 <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark modern-navbar sticky-top mb-4">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" th:href="@{/}">
-            <span class="brand-icon"><i class="bi bi-cart4"></i></span>
-            <span class="brand-text">eShop</span>
-            <span class="badge bg-light text-primary brand-badge d-none d-sm-inline-block">Tech & AI</span>
+            <span class="brand-icon"><i class="bi bi-house-heart-fill"></i></span>
+            <span class="brand-text">DecorHome</span>
+            <span class="badge bg-light text-primary brand-badge d-none d-sm-inline-block">Decor &amp; AI</span>
         </a>
         <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
             <span class="navbar-toggler-icon"></span>
@@ -58,7 +58,7 @@
                         <i class="bi bi-search"></i>
                     </span>
                     <input class="form-control border-start-0 pe-3 rounded-end-pill nav-search-input"
-                           name="keyword" placeholder="Mô tả sản phẩm bạn cần tìm..." th:value="${keyword}">
+                           name="keyword" placeholder="Tìm đèn ngủ, bình gốm, tranh decor..." th:value="${keyword}">
                 </div>
             </form>
             <ul class="navbar-nav align-items-lg-center">
@@ -124,31 +124,30 @@
             <div class="col-md-3 d-flex align-items-center gap-3">
                 <i class="bi bi-shield-check text-primary fs-3"></i>
                 <div>
-                    <strong class="d-block text-dark">Chính hãng 100%</strong>
-                    <span>Bảo hành chính hãng 12-24 tháng</span>
+                    <strong class="d-block text-dark">Đóng gói chống sốc</strong>
+                    <span>Bảo vệ an toàn tuyệt đối đồ gốm &amp; kính</span>
                 </div>
             </div>
             <div class="col-md-3 d-flex align-items-center gap-3">
                 <i class="bi bi-arrow-repeat text-primary fs-3"></i>
                 <div>
                     <strong class="d-block text-dark">Đổi trả tiện lợi</strong>
-                    <span>30 ngày đổi mới nếu có lỗi NSX</span>
+                    <span>30 ngày 1 đổi 1 nếu nứt vỡ khi giao</span>
                 </div>
             </div>
             <div class="col-md-3 d-flex align-items-center gap-3">
-                <i class="bi bi-cpu text-primary fs-3"></i>
+                <i class="bi bi-stars text-primary fs-3"></i>
                 <div>
-                    <strong class="d-block text-dark">Gợi ý AI thông minh</strong>
-                    <span>Vector search & gợi ý theo sở thích</span>
+                    <strong class="d-block text-dark">Tư vấn AI không gian</strong>
+                    <span>Phối đồ nội thất theo gu &amp; phong cách</span>
                 </div>
             </div>
         </div>
         <div class="d-flex flex-wrap justify-content-between align-items-center text-muted small pt-2">
             <div>
-                © 2026 <strong>eShop</strong>. Phát triển trên Spring Boot · Thymeleaf · MariaDB Vector Store · Gemini AI.
+                © 2026 <strong>DecorHome</strong>. Không gian sống ấm áp &amp; tinh tế · Spring Boot · MariaDB Vector Store · Gemini AI.
             </div>
             <div class="d-flex gap-3">
-                <span class="badge bg-light text-secondary border">Branch: member 5</span>
                 <span class="badge bg-light text-success border"><i class="bi bi-check-circle me-1"></i>Hệ thống sẵn sàng</span>
             </div>
         </div>
@@ -163,41 +162,41 @@
                 <path d="M4 5.75A2.75 2.75 0 0 1 6.75 3h10.5A2.75 2.75 0 0 1 20 5.75v7.5A2.75 2.75 0 0 1 17.25 16H10l-5.4 4.05a.4.4 0 0 1-.64-.32V16.7A2.75 2.75 0 0 1 4 13.25z"/>
                 <path d="M8 8h8M8 11.5h5"/>
             </svg>
-            <span>Hỏi eShop AI</span>
+            <span>Hỏi DecorHome AI</span>
         </button>
 
         <section id="eshop-chat-panel" class="eshop-chat__panel" role="dialog"
-                 aria-label="Tư vấn sản phẩm eShop" aria-hidden="true" hidden>
+                 aria-label="Tư vấn nội thất DecorHome" aria-hidden="true" hidden>
             <header class="eshop-chat__header">
                 <div class="eshop-chat__avatar" aria-hidden="true">AI</div>
                 <div class="eshop-chat__heading">
-                    <h2>Tư vấn eShop</h2>
-                    <p>Hỏi về sản phẩm, giá và tồn kho</p>
+                    <h2>Tư vấn DecorHome</h2>
+                    <p>Gợi ý phối đồ nội thất, giá &amp; tồn kho</p>
                 </div>
                 <button class="eshop-chat__close" type="button" aria-label="Đóng cửa sổ chat">×</button>
             </header>
 
             <div class="eshop-chat__messages" role="log" aria-live="polite" aria-relevant="additions text">
-                <article class="eshop-chat__message eshop-chat__message--assistant">Chào bạn! Bạn đang tìm sản phẩm nào, hoặc cần tư vấn theo nhu cầu và ngân sách?</article>
+                <article class="eshop-chat__message eshop-chat__message--assistant">Chào bạn! Bạn đang muốn trang trí phòng khách, phòng ngủ hay góc làm việc theo phong cách nào?</article>
             </div>
 
             <div class="eshop-chat__suggestions" aria-label="Câu hỏi gợi ý">
-                <button type="button" data-chat-prompt="Tư vấn điện thoại chụp ảnh tốt dưới 20 triệu">Điện thoại chụp ảnh tốt</button>
-                <button type="button" data-chat-prompt="Gợi ý laptop cho học tập và làm việc">Laptop học tập, làm việc</button>
+                <button type="button" data-chat-prompt="Tư vấn đèn trang trí phòng ngủ ánh sáng ấm">Đèn ngủ ánh sáng ấm</button>
+                <button type="button" data-chat-prompt="Gợi ý đồ decor phòng khách phong cách Bắc Âu">Decor phòng khách Bắc Âu</button>
             </div>
 
             <p class="eshop-chat__status" role="status" aria-live="polite"></p>
             <form class="eshop-chat__form">
                 <label class="visually-hidden" for="eshop-chat-input">Tin nhắn của bạn</label>
                 <textarea id="eshop-chat-input" name="message" rows="1" maxlength="1000"
-                          placeholder="Nhập câu hỏi của bạn..." required></textarea>
+                          placeholder="Nhập câu hỏi trang trí của bạn..." required></textarea>
                 <button class="eshop-chat__send" type="submit" aria-label="Gửi tin nhắn">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="m4 4 17 8-17 8 3-8zM7 12h14"/>
                     </svg>
                 </button>
             </form>
-            <p class="eshop-chat__disclaimer">AI tham khảo danh mục eShop; vui lòng kiểm tra thông tin sản phẩm trước khi đặt mua.</p>
+            <p class="eshop-chat__disclaimer">AI tham khảo danh mục DecorHome; vui lòng kiểm tra kích thước &amp; tồn kho trước khi đặt mua.</p>
         </section>
     </section>
     <script th:src="@{/js/ai-chat.js}"></script>

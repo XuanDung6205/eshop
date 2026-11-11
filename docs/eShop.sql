@@ -1,10 +1,6 @@
 -- =====================================================================
---  eShop.sql  –  CSDL mẫu cho dự án Shopping Cart (Spring Boot + JPA)
---  MariaDB 10.6+ / 11.x      Charset: utf8mb4
---
---  Phần A (bắt buộc - dùng từ Phần 1): category (15 dòng), product (50 dòng)
---  Phần B (dùng ở Phần 3 – Security):   users (tài khoản đăng nhập)
---  Phần C (dùng ở Phần 2 – Giỏ hàng):   orders, order_detail (đơn hàng)
+--  CSDL mẫu cho dự án Website bán đồ trang trí nội thất DecorHome
+--  MariaDB 11.7+      Charset: utf8mb4
 --
 --  Tài khoản mẫu (mật khẩu đều là 123456, đã băm BCrypt):
 --     seller1   / 123456  -> ROLE_SELLER
@@ -20,7 +16,7 @@ CREATE DATABASE eshop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE eshop;
 
 -- ---------------------------------------------------------------------
--- PHẦN A. DANH MỤC & SẢN PHẨM
+-- A. DANH MỤC & SẢN PHẨM TRANG TRÍ NỘI THẤT
 -- ---------------------------------------------------------------------
 CREATE TABLE category (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
@@ -35,7 +31,7 @@ CREATE TABLE product (
     name        VARCHAR(150)  NOT NULL,
     description VARCHAR(500),
     price       DECIMAL(15,2) NOT NULL,
-    quantity    INT           NOT NULL DEFAULT 0,      -- số lượng tồn kho
+    quantity    INT           NOT NULL DEFAULT 0,
     image_url   VARCHAR(500),
     category_id BIGINT        NOT NULL,
     created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -48,91 +44,86 @@ CREATE TABLE product (
 CREATE INDEX idx_product_name ON product (name);
 
 INSERT INTO category (id, name, description) VALUES
- (1,  'Điện thoại',           'Điện thoại thông minh các hãng'),
- (2,  'Máy tính bảng',        'iPad, Galaxy Tab, Xiaomi Pad'),
- (3,  'Laptop',               'Máy tính xách tay học tập, văn phòng, đồ hoạ'),
- (4,  'Đồng hồ thông minh',   'Smartwatch, vòng đeo tay sức khoẻ'),
- (5,  'Tai nghe',             'Tai nghe có dây, không dây, chống ồn'),
- (6,  'Loa',                  'Loa Bluetooth, loa di động'),
- (7,  'Bàn phím',             'Bàn phím cơ, bàn phím không dây'),
- (8,  'Chuột',                'Chuột văn phòng, chuột gaming'),
- (9,  'Màn hình',             'Màn hình máy tính văn phòng, gaming, đồ hoạ'),
- (10, 'Máy ảnh',              'Máy ảnh mirrorless, máy ảnh chụp lấy liền'),
- (11, 'Phụ kiện sạc',         'Củ sạc, cáp sạc, pin dự phòng'),
- (12, 'Thiết bị mạng',        'Router WiFi, bộ mở rộng sóng, mesh'),
- (13, 'Thiết bị lưu trữ',     'Ổ cứng SSD, HDD, USB'),
- (14, 'Máy in',               'Máy in laser, máy in phun màu'),
- (15, 'Gia dụng thông minh',  'Robot hút bụi, nồi chiên, máy lọc không khí');
+ (1,  'Đèn trang trí',          'Đèn bàn ngủ, đèn cây đứng phòng khách, đèn thả trần ánh sáng ấm'),
+ (2,  'Tranh treo tường',       'Tranh canvas tối giản, tranh trừu tượng, bộ tranh nghệ thuật Bắc Âu'),
+ (3,  'Bình hoa & Gốm sứ',      'Bình gốm Bát Tràng, lọ hoa sứ mờ phong cách Japandi, bình thủy tinh'),
+ (4,  'Gương decor',            'Gương đứng toàn thân khung gỗ sồi, gương tròn treo tường, gương lượn sóng'),
+ (5,  'Thảm trải sàn',          'Thảm phòng khách dệt sợi đay, thảm lông cừu nhân tạo, thảm họa tiết tối giản'),
+ (6,  'Gối tựa & Chăn decor',   'Gối tựa sofa vải linen, gối nhung sang trọng, chăn phủ sofa dệt kim'),
+ (7,  'Đồng hồ treo tường',     'Đồng hồ gỗ tự nhiên kim trôi êm ái, đồng hồ kim loại tối giản'),
+ (8,  'Kệ gỗ & Giá treo',       'Kệ sách gỗ sồi đứng, kệ gỗ treo tường trang trí, giá treo đồ đa năng'),
+ (9,  'Nến thơm & Tinh dầu',    'Nến thơm sáp đậu nành thiên nhiên, tinh dầu khuếch tán que mây'),
+ (10, 'Cây giả trang trí',      'Cây xanh nội thất không cần chăm sóc, cây bàng Singapore, cây oliu Bắc Âu'),
+ (11, 'Tượng & Đồ trưng bày',   'Tượng nghệ thuật trừu tượng, khay đá marble, đồ decor bàn làm việc'),
+ (12, 'Ghế thư giãn & Đôn sofa','Ghế bành đọc sách bọc vải nỉ ấm áp, đôn sofa chân gỗ sồi, ghế mây đan');
 
 INSERT INTO product (name, description, price, quantity, image_url, category_id) VALUES
--- 1. Điện thoại
- ('iPhone 15 128GB',              'Chip A16 Bionic, màn hình 6.1 inch, Dynamic Island',      19990000, 25, 'https://placehold.co/400x300?text=iPhone+15',             1),
- ('Samsung Galaxy S24 256GB',     'Exynos 2400, màn hình 6.2 inch 120Hz, Galaxy AI',          22990000, 20, 'https://placehold.co/400x300?text=Galaxy+S24',            1),
- ('Xiaomi Redmi Note 13 8GB/128GB','Màn hình AMOLED 120Hz, camera 108MP, pin 5000mAh',          4890000, 60, 'https://placehold.co/400x300?text=Redmi+Note+13',         1),
- ('OPPO Reno11 F 5G',             'Màn hình 6.7 inch, sạc nhanh 67W, camera 64MP',             8990000, 35, 'https://placehold.co/400x300?text=OPPO+Reno11+F',         1),
--- 2. Máy tính bảng
- ('iPad Air M2 11 inch WiFi 128GB','Chip Apple M2, hỗ trợ Apple Pencil Pro',                   16990000, 15, 'https://placehold.co/400x300?text=iPad+Air+M2',          2),
- ('Samsung Galaxy Tab S9 FE',     'Màn hình 10.9 inch, kèm bút S Pen, kháng nước IP68',        9490000, 18, 'https://placehold.co/400x300?text=Galaxy+Tab+S9+FE',     2),
- ('Xiaomi Pad 6 8GB/256GB',       'Snapdragon 870, màn hình 11 inch 144Hz',                    7990000, 22, 'https://placehold.co/400x300?text=Xiaomi+Pad+6',          2),
--- 3. Laptop
- ('MacBook Air M3 13 inch 16GB/256GB','Chip Apple M3, pin đến 18 giờ, nặng 1.24kg',           27990000, 10, 'https://placehold.co/400x300?text=MacBook+Air+M3',       3),
- ('Dell Inspiron 15 3530',        'Core i5-1335U, RAM 16GB, SSD 512GB, 15.6 inch FHD',        15990000, 14, 'https://placehold.co/400x300?text=Dell+Inspiron+15',     3),
- ('ASUS Vivobook 15 X1504VA',     'Core i5-1335U, RAM 8GB, SSD 512GB',                        12490000, 20, 'https://placehold.co/400x300?text=ASUS+Vivobook+15',     3),
- ('Lenovo ThinkPad E14 Gen 5',    'Core i7-1355U, RAM 16GB, SSD 512GB, bàn phím chuẩn ThinkPad',18990000, 8, 'https://placehold.co/400x300?text=ThinkPad+E14',         3),
--- 4. Đồng hồ thông minh
- ('Apple Watch SE 2 GPS 40mm',    'Theo dõi nhịp tim, phát hiện té ngã, chống nước 50m',       6490000, 30, 'https://placehold.co/400x300?text=Apple+Watch+SE+2',     4),
- ('Samsung Galaxy Watch6 40mm',   'Đo thành phần cơ thể, theo dõi giấc ngủ',                   5990000, 25, 'https://placehold.co/400x300?text=Galaxy+Watch6',         4),
- ('Xiaomi Smart Band 8',          'Màn hình AMOLED 1.62 inch, pin 16 ngày',                     890000, 80, 'https://placehold.co/400x300?text=Smart+Band+8',          4),
--- 5. Tai nghe
- ('AirPods Pro 2 USB-C',          'Chống ồn chủ động, âm thanh không gian',                    5990000, 40, 'https://placehold.co/400x300?text=AirPods+Pro+2',         5),
- ('Sony WH-1000XM5',              'Tai nghe chụp tai chống ồn hàng đầu, pin 30 giờ',           7990000, 12, 'https://placehold.co/400x300?text=Sony+WH-1000XM5',      5),
- ('JBL Tune 520BT',               'Tai nghe Bluetooth chụp tai, pin 57 giờ',                   1190000, 50, 'https://placehold.co/400x300?text=JBL+Tune+520BT',        5),
- ('Soundcore Liberty 4 NC',       'Tai nghe True Wireless chống ồn, pin 50 giờ',               1790000, 45, 'https://placehold.co/400x300?text=Liberty+4+NC',          5),
--- 6. Loa
- ('JBL Flip 6',                   'Loa Bluetooth chống nước IP67, pin 12 giờ',                 2690000, 30, 'https://placehold.co/400x300?text=JBL+Flip+6',            6),
- ('Marshall Emberton II',         'Loa di động âm thanh 360 độ, pin hơn 30 giờ',               3990000, 15, 'https://placehold.co/400x300?text=Marshall+Emberton+II', 6),
- ('Sony SRS-XB100',               'Loa mini Extra Bass, có dây đeo',                           1290000, 40, 'https://placehold.co/400x300?text=Sony+SRS-XB100',        6),
--- 7. Bàn phím
- ('Akko 3087 Dragon Ball',        'Bàn phím cơ TKL, switch Akko CS Jelly Pink',                1290000, 25, 'https://placehold.co/400x300?text=Akko+3087',             7),
- ('Logitech K380',                'Bàn phím Bluetooth đa thiết bị, nhỏ gọn',                    790000, 60, 'https://placehold.co/400x300?text=Logitech+K380',         7),
- ('Keychron K2 V2',               'Bàn phím cơ không dây 75%, hỗ trợ Mac/Windows',             2190000, 20, 'https://placehold.co/400x300?text=Keychron+K2',           7),
--- 8. Chuột
- ('Logitech M331 Silent Plus',    'Chuột không dây, giảm 90% tiếng ồn',                         350000, 100,'https://placehold.co/400x300?text=Logitech+M331',         8),
- ('Logitech MX Master 3S',        'Chuột cao cấp 8000 DPI, cuộn MagSpeed',                     2490000, 20, 'https://placehold.co/400x300?text=MX+Master+3S',          8),
- ('Razer DeathAdder Essential',   'Chuột gaming 6400 DPI, thiết kế công thái học',              590000, 45, 'https://placehold.co/400x300?text=DeathAdder',            8),
--- 9. Màn hình
- ('LG 24MP60G 24 inch',           'Tấm nền IPS, 75Hz, AMD FreeSync',                           2890000, 30, 'https://placehold.co/400x300?text=LG+24MP60G',            9),
- ('Dell UltraSharp U2424H',       '24 inch IPS 120Hz, chuẩn màu 100% sRGB',                    5990000, 12, 'https://placehold.co/400x300?text=Dell+U2424H',           9),
- ('Samsung Odyssey G5 27 inch',   'Màn hình cong 2K 165Hz cho game thủ',                       6490000, 10, 'https://placehold.co/400x300?text=Odyssey+G5',            9),
- ('ASUS ProArt PA248QV',          '24.1 inch, 100% sRGB, Calman Verified cho đồ hoạ',          5290000, 8,  'https://placehold.co/400x300?text=ProArt+PA248QV',        9),
--- 10. Máy ảnh
- ('Canon EOS R50 Kit 18-45mm',    'Mirrorless 24.2MP, quay 4K, nhỏ gọn',                      18990000, 6,  'https://placehold.co/400x300?text=Canon+EOS+R50',        10),
- ('Sony ZV-E10 Kit 16-50mm',      'Máy ảnh vlog ống kính rời, quay 4K',                       16490000, 7,  'https://placehold.co/400x300?text=Sony+ZV-E10',          10),
- ('Fujifilm Instax Mini 12',      'Máy ảnh chụp lấy liền, tự động chỉnh sáng',                 1890000, 35, 'https://placehold.co/400x300?text=Instax+Mini+12',       10),
--- 11. Phụ kiện sạc
- ('Củ sạc Anker 20W USB-C',       'Sạc nhanh PD 20W cho iPhone',                                290000, 120,'https://placehold.co/400x300?text=Anker+20W',             11),
- ('Pin dự phòng Xiaomi 20000mAh', 'Sạc nhanh 22.5W, 2 cổng USB-A + 1 USB-C',                    590000, 70, 'https://placehold.co/400x300?text=Xiaomi+20000mAh',       11),
- ('Cáp Ugreen USB-C to USB-C 100W','Dài 1.5m, bọc dù, hỗ trợ sạc laptop',                       250000, 150,'https://placehold.co/400x300?text=Ugreen+100W',           11),
- ('Củ sạc Baseus GaN 65W',        'Công nghệ GaN, 2 USB-C + 1 USB-A, sạc được laptop',          790000, 55, 'https://placehold.co/400x300?text=Baseus+65W',            11),
--- 12. Thiết bị mạng
- ('Router TP-Link Archer AX23',   'WiFi 6 chuẩn AX1800, 4 ăng-ten',                            1290000, 30, 'https://placehold.co/400x300?text=Archer+AX23',           12),
- ('TP-Link Deco X20 (2-pack)',    'Hệ thống WiFi Mesh WiFi 6, phủ sóng 370m2',                 3490000, 15, 'https://placehold.co/400x300?text=Deco+X20',              12),
--- 13. Thiết bị lưu trữ
- ('SSD di động Samsung T7 1TB',   'USB 3.2 Gen 2, tốc độ đọc 1050MB/s',                        2690000, 25, 'https://placehold.co/400x300?text=Samsung+T7',            13),
- ('USB SanDisk Ultra 64GB',       'USB 3.0, tốc độ đọc 130MB/s',                                190000, 200,'https://placehold.co/400x300?text=SanDisk+64GB',          13),
- ('SSD WD Blue SN580 1TB NVMe',   'PCIe Gen4, tốc độ đọc 4150MB/s',                            1890000, 30, 'https://placehold.co/400x300?text=WD+SN580',              13),
- ('HDD Seagate One Touch 2TB',    'Ổ cứng di động USB 3.0, vỏ vải sang trọng',                 2190000, 20, 'https://placehold.co/400x300?text=Seagate+2TB',           13),
--- 14. Máy in
- ('Canon LBP2900',                'Máy in laser trắng đen A4, 12 trang/phút',                  3490000, 10, 'https://placehold.co/400x300?text=Canon+LBP2900',        14),
- ('HP LaserJet M211dw',           'In 2 mặt tự động, kết nối WiFi',                            4290000, 8,  'https://placehold.co/400x300?text=HP+M211dw',             14),
- ('Epson EcoTank L3250',          'In phun màu đa năng in-scan-copy, WiFi',                    4590000, 9,  'https://placehold.co/400x300?text=Epson+L3250',           14),
--- 15. Gia dụng thông minh
- ('Robot hút bụi Xiaomi E10',     'Hút và lau 2 trong 1, lực hút 4000Pa',                      3990000, 12, 'https://placehold.co/400x300?text=Xiaomi+E10',            15),
- ('Nồi chiên không dầu Philips HD9200','Dung tích 4.1L, công nghệ Rapid Air',                    1990000, 25, 'https://placehold.co/400x300?text=Philips+HD9200',       15),
- ('Máy lọc không khí Xiaomi 4 Lite','Màng lọc HEPA, điều khiển qua app Mi Home',               3290000, 18, 'https://placehold.co/400x300?text=Air+Purifier+4+Lite',  15);
+-- 1. Đèn trang trí (1-4)
+ ('Đèn bàn gốm sứ chao vải Linen',     'Ánh sáng vàng ấm 3000K dịu mắt, chân đế gốm thủ công mộc mạc cho phòng ngủ',               690000, 25, 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&auto=format&fit=crop&q=80', 1),
+ ('Đèn cây đứng phòng khách Bắc Âu',   'Thân hợp kim sơn tĩnh điện kết hợp gỗ sồi, cao 1m65, phù hợp đặt cạnh sofa đọc sách',     1490000, 14, 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80', 1),
+ ('Đèn thả trần mây tre đan thủ công', 'Chất liệu mây tự nhiên đan tay tạo hiệu ứng bóng nắng ấm áp cho bàn ăn và ban công',       850000, 20, 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=600&auto=format&fit=crop&q=80', 1),
+ ('Đèn ngủ nấm thủy tinh Retro',       'Thiết kế dáng nấm cổ điển tối giản, điều chỉnh 3 mức độ sáng chạm cảm ứng tiện lợi',        540000, 32, 'https://images.unsplash.com/photo-1534105615256-13940a56ff44?w=600&auto=format&fit=crop&q=80', 1),
+
+-- 2. Tranh treo tường (5-7)
+ ('Bộ 3 tranh Canvas tối giản Wabi Sabi','Khung gỗ thông tự nhiên kèm vải canvas in mực UV bền màu, kích thước 40x60cm mỗi bức',     790000, 18, 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&auto=format&fit=crop&q=80', 2),
+ ('Tranh trừu tượng khối nổi Beige',   'Tông màu be kem và nâu đất nhẹ nhàng, phù hợp treo mảng tường lớn sau ghế sofa phòng khách',  1150000, 12, 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', 2),
+ ('Tranh lá cây nhiệt đới khung gỗ sồi','Họa tiết lá xanh rêu tươi mát, giúp không gian phòng làm việc thêm thư giãn',                450000, 28, 'https://images.unsplash.com/photo-1513519245088-029cb45c9034?w=600&auto=format&fit=crop&q=80', 2),
+
+-- 3. Bình hoa & Gốm sứ (8-11)
+ ('Bình gốm sứ nhám dáng Donut Japandi','Gốm nung nhiệt độ cao bề mặt sần mộc màu trắng kem, cắm cành khô hoặc hoa lau tuyệt đẹp',    380000, 40, 'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80', 3),
+ ('Lọ hoa gốm Bát Tràng men hỏa biến', 'Men gốm thủ công sắc xanh rêu chuyển nâu trầm độc bản, cao 28cm sang trọng',                  590000, 22, 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80', 3),
+ ('Bình hoa thủy tinh gân sọc hổ phách','Thủy tinh dày dặn trong suốt tông màu nâu hổ phách cổ điển cho bàn ăn hoặc kệ sách',        290000, 35, 'https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=600&auto=format&fit=crop&q=80', 3),
+ ('Set 3 bình gốm mini trang trí kệ',  'Bộ 3 lọ gốm kích thước nhỏ 10-18cm tông màu đất nung ấm áp, dễ phối trên kệ gỗ',            420000, 30, 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&auto=format&fit=crop&q=80', 3),
+
+-- 4. Gương decor (12-14)
+ ('Gương đứng toàn thân khung gỗ sồi', 'Kích thước 60x165cm, kính tráng bạc chống ố nét cao, có chân đứng gập gọn tiện di chuyển',   1890000, 10, 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=600&auto=format&fit=crop&q=80', 4),
+ ('Gương tròn treo tường viền da nâu', 'Đường kính 60cm kèm dây da treo tường phong cách Scandinavian cho phòng tắm hoặc bàn phấn',   650000, 20, 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&auto=format&fit=crop&q=80', 4),
+ ('Gương lượn sóng viền bọc nỉ kem',   'Kiểu dáng uốn lượn nghệ thuật trẻ trung, kích thước 50x150cm tạo điểm nhấn góc check-in',   1550000, 12, 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&auto=format&fit=crop&q=80', 4),
+
+-- 5. Thảm trải sàn (15-17)
+ ('Thảm dệt sợi đay tự nhiên hình tròn','Đường kính 1m5 đan sợi cói tự nhiên thân thiện môi trường, mang hơi thở nhiệt đới mộc mạc', 780000, 16, 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80', 5),
+ ('Thảm phòng khách lông cừu Bắc Âu',  'Kích thước 1m6x2m3 mềm mịn êm chân, họa tiết kẻ hình học kem nâu chống trượt mặt đáy',       1390000, 15, 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=600&auto=format&fit=crop&q=80', 5),
+ ('Thảm chùi chân dệt họa tiết Vintage','Sợi cotton dệt dày thấm hút tốt, kích thước 50x80cm phù hợp cửa ra vào hoặc cạnh giường ngủ', 240000, 45, 'https://images.unsplash.com/photo-1594040226829-7f251ab46d80?w=600&auto=format&fit=crop&q=80', 5),
+
+-- 6. Gối tựa & Chăn decor (18-20)
+ ('Gối tựa lưng sofa vải Linen màu rêu','Kích thước 45x45cm kèm ruột bông gòn 3D đàn hồi cao, vỏ vải đũi thoáng mát tháo giặt dễ',     220000, 50, 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=600&auto=format&fit=crop&q=80', 6),
+ ('Set 2 gối tựa nhung gân nâu Caramel','Chất liệu nhung tăm sang trọng tạo chiều sâu ấm cúng cho ghế sofa phòng khách',              410000, 30, 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80', 6),
+ ('Chăn phủ sofa dệt kim tua rua',      'Kích thước 130x180cm bằng len cotton mềm nhẹ, vừa trang trí ghế bành vừa đắp giữ ấm',      490000, 24, 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80', 6),
+
+-- 7. Đồng hồ treo tường (21-23)
+ ('Đồng hồ treo tường gỗ sồi kim trôi', 'Mặt gỗ nguyên khối đường kính 35cm, máy Quartz chạy êm tuyệt đối không gây tiếng tích tắc',   580000, 22, 'https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=600&auto=format&fit=crop&q=80', 7),
+ ('Đồng hồ nghệ thuật khung sắt tối giản','Đường kính 50cm sơn tĩnh điện đen nhám, thiết kế kim đồng thanh mảnh cho phòng khách hiện đại',720000, 14, 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=600&auto=format&fit=crop&q=80', 7),
+ ('Đồng hồ để bàn gỗ óc chó Vintage',   'Kích thước nhỏ gọn 15x15cm có đèn nền dịu nhẹ xem giờ ban đêm, phù hợp tab đầu giường',     360000, 25, 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=600&auto=format&fit=crop&q=80', 7),
+
+-- 8. Kệ gỗ & Giá treo (24-27)
+ ('Kệ sách đứng 4 tầng gỗ sồi tự nhiên','Kích thước 60x30x145cm chịu lực tốt, phủ dầu lau bóng giữ nguyên vân gỗ ấm áp',            1790000, 12, 'https://images.unsplash.com/photo-1594620302200-9a762244a156?w=600&auto=format&fit=crop&q=80', 8),
+ ('Thanh kệ gỗ treo tường trang trí',   'Gỗ thông nhập khẩu dài 80cm kèm pat sắt ẩn, phù hợp bày bình gốm nhỏ, nến thơm và tranh ảnh', 290000, 40, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80', 8),
+ ('Giá treo quần áo chữ A gỗ sồi',      'Thiết kế khung chữ A kèm kệ để giày bên dưới, giúp phòng ngủ tối giản gọn gàng hơn',         950000, 15, 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=600&auto=format&fit=crop&q=80', 8),
+ ('Kệ góc 3 tầng tre tự nhiên',         'Tận dụng góc tường trống để đặt chậu cây, sách hoặc đồ trang trí nhỏ xinh',                460000, 20, 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=600&auto=format&fit=crop&q=80', 8),
+
+-- 9. Nến thơm & Tinh dầu (28-31)
+ ('Nến thơm sáp đậu nành hương Gỗ Thông','Hũ thủy tinh nâu hổ phách 200g đốt 45 giờ, mùi hương rừng thông và tuyết tùng thư giãn',     260000, 60, 'https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=600&auto=format&fit=crop&q=80', 9),
+ ('Bộ khuếch tán tinh dầu que mây Trà Trắng','Dung tích 120ml tỏa hương nhẹ nhàng suốt 2 tháng, kèm lọ thủy tinh tối giản sang trọng',  320000, 48, 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&auto=format&fit=crop&q=80', 9),
+ ('Đèn đốt nến thơm đá Marble điều chỉnh sáng','Làm tan chảy sáp không cần lửa an toàn tuyệt đối, vừa làm đèn ngủ vừa tỏa hương thơm',690000, 18, 'https://images.unsplash.com/photo-1572726729207-a78d6feb18d7?w=600&auto=format&fit=crop&q=80', 9),
+ ('Nến thơm hương Vani & Hổ Phách ấm áp','Hũ gốm thủ công nắp gỗ sồi 250g, tạo bầu không khí lãng mạn ấm cúng cho buổi tối',          350000, 35, 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600&auto=format&fit=crop&q=80', 9),
+
+-- 10. Cây giả trang trí (32-34)
+ ('Cây Bàng Singapore giả cao 1m2 kèm chậu mây','Lá nhựa PE gân nổi giống thật đến 95%, mang sắc xanh sức sống cho góc phòng khách',   690000, 20, 'https://images.unsplash.com/photo-1463320726281-696a485928c7?w=600&auto=format&fit=crop&q=80', 10),
+ ('Cây Oliu Bắc Âu decor cao 1m5',      'Dáng cây thanh mảnh sang trọng kèm chậu gốm trắng tối giản, lý tưởng cho căn hộ studio',       920000, 14, 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600&auto=format&fit=crop&q=80', 10),
+ ('Chậu cây Monstera để bàn làm việc',  'Cao 45cm kèm chậu xi măng đá mài nhỏ gọn, dễ đặt trên bàn học, kệ tivi hoặc quầy lễ tân',   280000, 38, 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=600&auto=format&fit=crop&q=80', 10),
+
+-- 11. Tượng & Đồ trưng bày (35-37)
+ ('Tượng trừu tượng gốm sứ Đôi Tay',    'Chất liệu gốm nung trắng nhám cao 24cm, tạo điểm nhấn nghệ thuật tinh tế trên bàn trà',      390000, 26, 'https://images.unsplash.com/photo-1513519245088-029cb45c9034?w=600&auto=format&fit=crop&q=80', 11),
+ ('Khay đựng trang sức đá Marble vân mây','Đá tự nhiên viền ánh kim dùng bày nước hoa, đồng hồ, nến thơm trên bàn trang điểm',        310000, 32, 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=600&auto=format&fit=crop&q=80', 11),
+ ('Cặp tượng Hươu vàng đồng sang trọng','Chất liệu composite mạ đồng bền màu, biểu tượng bình an và tài lộc cho kệ phòng khách',     520000, 18, 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80', 11),
+
+-- 12. Ghế thư giãn & Đôn sofa (38-40)
+ ('Ghế bành thư giãn bọc nỉ kem ấm áp', 'Đệm mút D40 êm ái kết hợp khung gỗ tần bì chắc chắn, thiết kế ôm lưng đọc sách cực thoải mái',3290000, 8,  'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80', 12),
+ ('Đôn sofa tròn bọc vải nhung xanh rêu','Đường kính 40cm chân gỗ sồi tự nhiên, dùng gác chân hoặc làm ghế ngồi phụ xinh xắn',       680000, 18, 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80', 12),
+ ('Ghế mây Papasan thư giãn kèm nệm dày','Khung mây song tự nhiên uốn cong đường kính 1m kèm nệm bông dày êm ái cho góc ban công',  2490000, 10, 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=600&auto=format&fit=crop&q=80', 12);
 
 -- ---------------------------------------------------------------------
--- PHẦN B. TÀI KHOẢN (Spring Security)
+-- B. TÀI KHOẢN (Spring Security)
 -- role: ROLE_SELLER | ROLE_CUSTOMER   (ROLE_GUEST gán cho người chưa đăng nhập)
 -- ---------------------------------------------------------------------
 CREATE TABLE users (
@@ -154,15 +145,14 @@ CREATE TABLE users (
 
 -- Mật khẩu: 123456
 INSERT INTO users (username, password, full_name, email, phone, address, role, enabled) VALUES
- ('seller1',   '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Trần Văn Bán',  'seller1@eshop.vn',   '0901000001', '12 Nguyễn Văn Bảo, Gò Vấp, TP.HCM', 'ROLE_SELLER',   TRUE),
- ('seller2',   '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Lê Thị Hàng',   'seller2@eshop.vn',   '0901000002', '45 Lê Lợi, Quận 1, TP.HCM',         'ROLE_SELLER',   TRUE),
- ('customer1', '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Nguyễn Văn Mua','customer1@gmail.com','0912000001', '78 Phan Văn Trị, Bình Thạnh, TP.HCM','ROLE_CUSTOMER', TRUE),
- ('customer2', '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Phạm Thị Sắm',  'customer2@gmail.com','0912000002', '9 Võ Văn Ngân, Thủ Đức, TP.HCM',    'ROLE_CUSTOMER', TRUE),
- ('locked',    '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Tài Khoản Khoá','locked@gmail.com',   '0912000009', 'TP.HCM',                            'ROLE_CUSTOMER', FALSE);
+ ('seller1',   '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Trần Văn Quản Trị', 'seller1@decorhome.vn', '0901000001', '12 Nguyễn Văn Bảo, Gò Vấp, TP.HCM', 'ROLE_SELLER',   TRUE),
+ ('seller2',   '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Lê Thị Decor',      'seller2@decorhome.vn', '0901000002', '45 Lê Lợi, Quận 1, TP.HCM',         'ROLE_SELLER',   TRUE),
+ ('customer1', '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Nguyễn Văn An',     'customer1@gmail.com',  '0912000001', '78 Phan Văn Trị, Bình Thạnh, TP.HCM','ROLE_CUSTOMER', TRUE),
+ ('customer2', '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Phạm Thị Mai',      'customer2@gmail.com',  '0912000002', '9 Võ Văn Ngân, Thủ Đức, TP.HCM',    'ROLE_CUSTOMER', TRUE),
+ ('locked',    '$2a$10$uPUNNrC1JUnzBYDZD6AQBe.swyBhdnARmWl.Ctpo737mZZF4hejyS', 'Tài Khoản Khoá',    'locked@gmail.com',     '0912000009', 'TP.HCM',                            'ROLE_CUSTOMER', FALSE);
 
 -- ---------------------------------------------------------------------
--- PHẦN C. ĐƠN HÀNG (Giỏ hàng + Thanh toán)
--- user_id cho phép NULL để Phần 2 (chưa có Security) vẫn lưu được đơn.
+-- C. ĐƠN HÀNG (Giỏ hàng + Thanh toán)
 -- ---------------------------------------------------------------------
 CREATE TABLE orders (
     id             BIGINT        NOT NULL AUTO_INCREMENT,
@@ -184,7 +174,7 @@ CREATE TABLE order_detail (
     order_id   BIGINT        NOT NULL,
     product_id BIGINT        NOT NULL,
     quantity   INT           NOT NULL,
-    unit_price DECIMAL(15,2) NOT NULL,                -- giá tại thời điểm mua
+    unit_price DECIMAL(15,2) NOT NULL,
     CONSTRAINT pk_order_detail PRIMARY KEY (id),
     CONSTRAINT fk_od_order   FOREIGN KEY (order_id)   REFERENCES orders (id) ON DELETE CASCADE,
     CONSTRAINT fk_od_product FOREIGN KEY (product_id) REFERENCES product (id),
@@ -197,4 +187,4 @@ CREATE TABLE order_detail (
 SELECT 'category' AS tbl, COUNT(*) AS total FROM category
 UNION ALL SELECT 'product', COUNT(*) FROM product
 UNION ALL SELECT 'users',   COUNT(*) FROM users;
--- Kết quả mong đợi: category 15, product 50, users 5
+-- Kết quả mong đợi: category 12, product 40, users 5

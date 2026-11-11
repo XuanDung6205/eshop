@@ -14,11 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Tự động cập nhật ảnh chính xác 100% khớp với từng sản phẩm trong cơ sở dữ liệu:
- * - Nồi chiên không dầu -> Ảnh nồi chiên
- * - Máy lọc không khí -> Ảnh máy lọc không khí
- * - Robot hút bụi -> Ảnh robot hút bụi
- * - Máy in, chuột, phím, tai nghe, loa, máy ảnh, laptop, tablet, điện thoại...
+ * Tự động đồng bộ ảnh đồ trang trí nội thất khớp chính xác với 40 sản phẩm mẫu của DecorHome.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,83 +22,73 @@ public class ProductDataInitializer implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(ProductDataInitializer.class);
     private final ProductRepository productRepository;
 
-    /** Map ID sản phẩm -> Link ảnh Unsplash khớp chính xác */
+    /** Map ID sản phẩm -> Link ảnh nội thất Unsplash khớp chính xác */
     public static final Map<Long, String> EXACT_PRODUCT_IMAGES = new HashMap<>();
 
     static {
-        // 1. Điện thoại & Máy tính bảng
-        EXACT_PRODUCT_IMAGES.put(1L, "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80"); // iPhone 15
-        EXACT_PRODUCT_IMAGES.put(2L, "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&auto=format&fit=crop&q=80"); // Samsung S24
-        EXACT_PRODUCT_IMAGES.put(3L, "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"); // Xiaomi Redmi Note 13
-        EXACT_PRODUCT_IMAGES.put(4L, "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&auto=format&fit=crop&q=80"); // OPPO Reno11 F
-        EXACT_PRODUCT_IMAGES.put(5L, "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&auto=format&fit=crop&q=80"); // iPad Air M2
-        EXACT_PRODUCT_IMAGES.put(6L, "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&auto=format&fit=crop&q=80"); // Galaxy Tab S9 FE
-        EXACT_PRODUCT_IMAGES.put(7L, "https://images.unsplash.com/photo-1585790050230-5dd28404ccb9?w=600&auto=format&fit=crop&q=80"); // Xiaomi Pad 6
+        // 1. Đèn trang trí
+        EXACT_PRODUCT_IMAGES.put(1L, "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(2L, "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(3L, "https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(4L, "https://images.unsplash.com/photo-1534105615256-13940a56ff44?w=600&auto=format&fit=crop&q=80");
 
-        // 2. Laptop
-        EXACT_PRODUCT_IMAGES.put(8L, "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop&q=80"); // MacBook Air M3
-        EXACT_PRODUCT_IMAGES.put(9L, "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&auto=format&fit=crop&q=80"); // Dell Inspiron 15
-        EXACT_PRODUCT_IMAGES.put(10L, "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&auto=format&fit=crop&q=80"); // ASUS Vivobook 15
-        EXACT_PRODUCT_IMAGES.put(11L, "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&auto=format&fit=crop&q=80"); // ThinkPad E14
+        // 2. Tranh treo tường
+        EXACT_PRODUCT_IMAGES.put(5L, "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(6L, "https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(7L, "https://images.unsplash.com/photo-1513519245088-029cb45c9034?w=600&auto=format&fit=crop&q=80");
 
-        // 3. Đồng hồ thông minh
-        EXACT_PRODUCT_IMAGES.put(12L, "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&auto=format&fit=crop&q=80"); // Apple Watch SE
-        EXACT_PRODUCT_IMAGES.put(13L, "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop&q=80"); // Galaxy Watch6
-        EXACT_PRODUCT_IMAGES.put(14L, "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=600&auto=format&fit=crop&q=80"); // Xiaomi Smart Band 8
+        // 3. Bình hoa & Gốm sứ
+        EXACT_PRODUCT_IMAGES.put(8L, "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(9L, "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(10L, "https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(11L, "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&auto=format&fit=crop&q=80");
 
-        // 4. Tai nghe & Loa
-        EXACT_PRODUCT_IMAGES.put(15L, "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop&q=80"); // AirPods Pro 2
-        EXACT_PRODUCT_IMAGES.put(16L, "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80"); // Sony WH-1000XM5
-        EXACT_PRODUCT_IMAGES.put(17L, "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&auto=format&fit=crop&q=80"); // JBL Tune 520BT
-        EXACT_PRODUCT_IMAGES.put(18L, "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"); // Soundcore Liberty 4 NC
-        EXACT_PRODUCT_IMAGES.put(19L, "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop&q=80"); // JBL Flip 6
-        EXACT_PRODUCT_IMAGES.put(20L, "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&auto=format&fit=crop&q=80"); // Marshall Emberton II
-        EXACT_PRODUCT_IMAGES.put(21L, "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=600&auto=format&fit=crop&q=80"); // Sony SRS-XB100
+        // 4. Gương decor
+        EXACT_PRODUCT_IMAGES.put(12L, "https://images.unsplash.com/photo-1618220179428-22790b461013?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(13L, "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(14L, "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&auto=format&fit=crop&q=80");
 
-        // 5. Chuột & Bàn phím
-        EXACT_PRODUCT_IMAGES.put(22L, "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80"); // Akko 3087 Dragon Ball
-        EXACT_PRODUCT_IMAGES.put(23L, "https://images.unsplash.com/photo-1541140532154-b024d705b909?w=600&auto=format&fit=crop&q=80"); // Logitech K380
-        EXACT_PRODUCT_IMAGES.put(24L, "https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&auto=format&fit=crop&q=80"); // Keychron K2 V2
-        EXACT_PRODUCT_IMAGES.put(25L, "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop&q=80"); // Logitech M331 Silent
-        EXACT_PRODUCT_IMAGES.put(26L, "https://images.unsplash.com/photo-1586349906319-48d20e9d17e5?w=600&auto=format&fit=crop&q=80"); // Logitech MX Master 3S
-        EXACT_PRODUCT_IMAGES.put(27L, "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&auto=format&fit=crop&q=80"); // Razer DeathAdder
+        // 5. Thảm trải sàn
+        EXACT_PRODUCT_IMAGES.put(15L, "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(16L, "https://images.unsplash.com/photo-1600166898405-da9535204843?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(17L, "https://images.unsplash.com/photo-1594040226829-7f251ab46d80?w=600&auto=format&fit=crop&q=80");
 
-        // 6. Màn hình
-        EXACT_PRODUCT_IMAGES.put(28L, "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&auto=format&fit=crop&q=80"); // LG 24MP60G
-        EXACT_PRODUCT_IMAGES.put(29L, "https://images.unsplash.com/photo-1547119957-637f8679db1e?w=600&auto=format&fit=crop&q=80"); // Dell UltraSharp U2424H
-        EXACT_PRODUCT_IMAGES.put(30L, "https://images.unsplash.com/photo-1585792180666-f7347c490ee2?w=600&auto=format&fit=crop&q=80"); // Samsung Odyssey G5
-        EXACT_PRODUCT_IMAGES.put(31L, "https://images.unsplash.com/photo-1551645120-d70bfe84c826?w=600&auto=format&fit=crop&q=80"); // ASUS ProArt
+        // 6. Gối tựa & Chăn decor
+        EXACT_PRODUCT_IMAGES.put(18L, "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(19L, "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(20L, "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80");
 
-        // 7. Máy ảnh
-        EXACT_PRODUCT_IMAGES.put(32L, "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80"); // Canon EOS R50
-        EXACT_PRODUCT_IMAGES.put(33L, "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?w=600&auto=format&fit=crop&q=80"); // Sony ZV-E10
-        EXACT_PRODUCT_IMAGES.put(34L, "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80"); // Instax Mini 12
+        // 7. Đồng hồ treo tường
+        EXACT_PRODUCT_IMAGES.put(21L, "https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(22L, "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(23L, "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=600&auto=format&fit=crop&q=80");
 
-        // 8. Phụ kiện sạc
-        EXACT_PRODUCT_IMAGES.put(35L, "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop&q=80"); // Anker 20W
-        EXACT_PRODUCT_IMAGES.put(36L, "https://images.unsplash.com/photo-1609592424367-9d7a2fa265a7?w=600&auto=format&fit=crop&q=80"); // Pin dự phòng Xiaomi
-        EXACT_PRODUCT_IMAGES.put(37L, "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80"); // Cáp Ugreen 100W
-        EXACT_PRODUCT_IMAGES.put(38L, "https://images.unsplash.com/photo-1622445262464-84b14e3295b6?w=600&auto=format&fit=crop&q=80"); // Củ sạc Baseus GaN 65W
+        // 8. Kệ gỗ & Giá treo
+        EXACT_PRODUCT_IMAGES.put(24L, "https://images.unsplash.com/photo-1594620302200-9a762244a156?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(25L, "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(26L, "https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(27L, "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=600&auto=format&fit=crop&q=80");
 
-        // 9. Thiết bị mạng
-        EXACT_PRODUCT_IMAGES.put(39L, "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&auto=format&fit=crop&q=80"); // Router TP-Link Archer AX23
-        EXACT_PRODUCT_IMAGES.put(40L, "https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=600&auto=format&fit=crop&q=80"); // TP-Link Deco X20 Mesh
+        // 9. Nến thơm & Tinh dầu
+        EXACT_PRODUCT_IMAGES.put(28L, "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(29L, "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(30L, "https://images.unsplash.com/photo-1572726729207-a78d6feb18d7?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(31L, "https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600&auto=format&fit=crop&q=80");
 
-        // 10. Thiết bị lưu trữ
-        EXACT_PRODUCT_IMAGES.put(41L, "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=600&auto=format&fit=crop&q=80"); // SSD Samsung T7
-        EXACT_PRODUCT_IMAGES.put(42L, "https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?w=600&auto=format&fit=crop&q=80"); // USB SanDisk Ultra
-        EXACT_PRODUCT_IMAGES.put(43L, "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&auto=format&fit=crop&q=80"); // SSD WD Blue SN580
-        EXACT_PRODUCT_IMAGES.put(44L, "https://images.unsplash.com/photo-1531492746076-161ca9bcad58?w=600&auto=format&fit=crop&q=80"); // HDD Seagate One Touch
+        // 10. Cây giả trang trí
+        EXACT_PRODUCT_IMAGES.put(32L, "https://images.unsplash.com/photo-1463320726281-696a485928c7?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(33L, "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(34L, "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=600&auto=format&fit=crop&q=80");
 
-        // 11. Máy in
-        EXACT_PRODUCT_IMAGES.put(45L, "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&auto=format&fit=crop&q=80"); // Canon LBP2900
-        EXACT_PRODUCT_IMAGES.put(46L, "https://images.unsplash.com/photo-1589330694653-dad6ef49c654?w=600&auto=format&fit=crop&q=80"); // HP LaserJet M211dw
-        EXACT_PRODUCT_IMAGES.put(47L, "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80"); // Epson EcoTank L3250
+        // 11. Tượng & Đồ trưng bày
+        EXACT_PRODUCT_IMAGES.put(35L, "https://images.unsplash.com/photo-1513519245088-029cb45c9034?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(36L, "https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(37L, "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80");
 
-        // 12. Gia dụng thông minh
-        EXACT_PRODUCT_IMAGES.put(48L, "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=600&auto=format&fit=crop&q=80"); // Robot hút bụi Xiaomi E10
-        EXACT_PRODUCT_IMAGES.put(49L, "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80"); // Nồi chiên không dầu Philips HD9200
-        EXACT_PRODUCT_IMAGES.put(50L, "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=80"); // Máy lọc không khí Xiaomi 4 Lite
+        // 12. Ghế thư giãn & Đôn sofa
+        EXACT_PRODUCT_IMAGES.put(38L, "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(39L, "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80");
+        EXACT_PRODUCT_IMAGES.put(40L, "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=600&auto=format&fit=crop&q=80");
     }
 
     @Override
@@ -122,7 +108,7 @@ public class ProductDataInitializer implements CommandLineRunner {
 
             if (updatedCount > 0) {
                 productRepository.saveAll(products);
-                log.info(">>> [eShop] Đã cập nhật ảnh khớp chính xác 100% cho {} sản phẩm trong CSDL MariaDB", updatedCount);
+                log.info(">>> [DecorHome] Đã cập nhật ảnh nội thất khớp chính xác cho {} sản phẩm trong CSDL", updatedCount);
             }
         } catch (Exception e) {
             log.warn("Lưu ý: Bỏ qua tự động cập nhật ảnh sản phẩm: {}", e.getMessage());

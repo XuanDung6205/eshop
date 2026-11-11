@@ -9,9 +9,9 @@
     <table class="table text-start">
         <tr><th>Ngân hàng</th><td>Vietcombank – CN TP.HCM</td></tr>
         <tr><th>Số tài khoản</th><td>0123 456 789</td></tr>
-        <tr><th>Chủ tài khoản</th><td>CONG TY ESHOP</td></tr>
+        <tr><th>Chủ tài khoản</th><td>CONG TY DECORHOME</td></tr>
         <tr><th>Số tiền</th><td class="price" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></td></tr>
-        <tr><th>Nội dung CK</th><td th:text="'ESHOP' + ${order.id}"></td></tr>
+        <tr><th>Nội dung CK</th><td th:text="'DECORHOME' + ${order.id}"></td></tr>
     </table>
     <form th:action="@{/orders/{id}/pay(id=${order.id})}" method="post">
         <button class="btn btn-success btn-lg">Tôi đã chuyển khoản</button>

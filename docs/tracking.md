@@ -1,4 +1,4 @@
-# TV4 User Tracking contract
+# User Tracking contract
 
 The browser sends `POST /tracking/events` with JSON. This endpoint accepts guests and signed-in customers through the web security chain; it requires the normal CSRF header. The browser supplies an opaque UUID `sessionId`, which is only for analytics. The server derives `userId` from the authenticated principal and never accepts one from JSON.
 

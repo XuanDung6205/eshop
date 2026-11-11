@@ -35,8 +35,8 @@ public class ProductAssistantService {
     private static final int SOURCE_LIMIT = 5;
     private static final double MIN_SIMILARITY = 0.55;
     private static final String NO_RESULTS_MESSAGE =
-            "Mình chưa tìm thấy sản phẩm phù hợp với câu hỏi của bạn trong eShop. "
-                    + "Bạn có thể cho mình biết thêm loại sản phẩm, nhu cầu hoặc khoảng giá không?";
+            "Mình chưa tìm thấy sản phẩm trang trí nội thất phù hợp với câu hỏi của bạn trong DecorHome. "
+                    + "Bạn có thể cho mình biết thêm loại sản phẩm, phong cách (Bắc Âu, tối giản...), không gian bài trí hoặc khoảng giá không?";
 
     private final ProductVectorService productVectorService;
     private final ProductRepository productRepository;

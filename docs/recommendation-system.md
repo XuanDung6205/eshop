@@ -1,6 +1,6 @@
-# TV5: Phân tích hành vi & Hệ thống Gợi ý Cá nhân hóa (Recommendation System)
+# Phân tích hành vi & Hệ thống Gợi ý Cá nhân hóa (Recommendation System)
 
-Tài liệu đặc tả kiến trúc, thuật toán và cơ chế hoạt động của hệ thống gợi ý sản phẩm được phụ trách bởi **Thành viên 5**.
+Tài liệu đặc tả kiến trúc, thuật toán và cơ chế hoạt động của hệ thống gợi ý sản phẩm.
 
 ---
 
@@ -8,8 +8,8 @@ Tài liệu đặc tả kiến trúc, thuật toán và cơ chế hoạt động
 
 Hệ thống gợi ý của eShop không sử dụng các giải thuật đơn giản (như random hay chỉ lấy theo ID), mà áp dụng mô hình **Hybrid Recommendation Engine** kết hợp 3 yếu tố:
 1. **Rule-based Categorization**: Phân tích danh mục tương đương (Substitutes) và danh mục bổ trợ (Complementary).
-2. **Behavioral Intent Scoring**: Khai thác dữ liệu theo vết (User Tracking) từ Thành viên 4 để lượng hóa độ quan tâm của khách hàng.
-3. **Semantic Vector Search (Spring AI + MariaDB)**: Khai thác không gian vector 768 chiều từ Thành viên 2 để tìm kiếm độ tương đồng ngữ nghĩa.
+2. **Behavioral Intent Scoring**: Khai thác dữ liệu theo vết (User Tracking) để lượng hóa độ quan tâm của khách hàng.
+3. **Semantic Vector Search (Spring AI + MariaDB)**: Khai thác không gian vector 768 chiều để tìm kiếm độ tương đồng ngữ nghĩa.
 
 ---
 
