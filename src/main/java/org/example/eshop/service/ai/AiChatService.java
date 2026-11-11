@@ -32,15 +32,14 @@ public class AiChatService {
     }
 
     /**
-     * Chat thông thường với Gemini AI (hỏi đáp chính sách, hướng dẫn sử dụng eShop)
+     * Chat thông thường với Gemini AI (hỏi đáp chính sách, hướng dẫn mua hàng)
      */
     public String chat(String userMessage) {
         return chat(userMessage, null);
     }
 
     /**
-     * Chat có ngữ cảnh (RAG integration point dành riêng cho Thành viên 3 cắm
-     * Vector DB vào)
+     * Chat có ngữ cảnh (RAG integration point)
      */
     public String chatWithContext(String userMessage, String contextData) {
         return chatWithContext(userMessage, contextData, "");
@@ -73,7 +72,7 @@ public class AiChatService {
 
         if (!StringUtils.hasText(apiKey)) {
             log.warn("Gemini API Key chưa được cấu hình trong biến môi trường GEMINI_API_KEY. Trả về thông báo demo.");
-            return "[eShop AI Demo]: Bạn chưa cấu hình Google Gemini API Key hợp lệ. " +
+            return "[DecorHome AI Demo]: Bạn chưa cấu hình Google Gemini API Key hợp lệ. " +
                     "Vui lòng cấu hình biến môi trường GEMINI_API_KEY.";
         }
 
@@ -89,10 +88,12 @@ public class AiChatService {
             log.warn("Gọi model {} ({}) gặp lỗi: {}. Đang tự động dò tìm model khả dụng từ Google AI Studio...",
                     modelToUse, apiVer, ex.getMessage());
 
-            // Xoá cache cũ nếu model đã cache bị lỗi (tránh bị kẹt vĩnh viễn ở model đã ngưng hỗ trợ)
+            // Xoá cache cũ nếu model đã cache bị lỗi (tránh bị kẹt vĩnh viễn ở model đã
+            // ngưng hỗ trợ)
             this.discoveredModel = null;
 
-            // 2. Tự động truy vấn ModelService.ListModels để thử lần lượt các model khả dụng thực tế
+            // 2. Tự động truy vấn ModelService.ListModels để thử lần lượt các model khả
+            // dụng thực tế
             try {
                 List<DiscoveredInfo> candidates = discoverSupportedModels(apiKey);
                 for (DiscoveredInfo info : candidates) {
@@ -182,11 +183,12 @@ public class AiChatService {
             }
         }
 
-        return "Xin lỗi bạn, trợ lý eShop chưa thể đưa ra câu trả lời lúc này. Bạn vui lòng thử lại sau giây lát nhé!";
+        return "Xin lỗi bạn, trợ lý DecorHome chưa thể đưa ra câu trả lời lúc này. Bạn vui lòng thử lại sau giây lát nhé!";
     }
 
     /**
-     * Tự động truy vấn ModelService.ListModels từ Google để lấy danh sách các model khả dụng,
+     * Tự động truy vấn ModelService.ListModels từ Google để lấy danh sách các model
+     * khả dụng,
      * sắp xếp ưu tiên flash-lite và các dòng flash mới nhất lên đầu.
      */
     private List<DiscoveredInfo> discoverSupportedModels(String apiKey) {

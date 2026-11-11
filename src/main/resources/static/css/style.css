@@ -1,16 +1,27 @@
 /* ==========================================================================
-   Global & Base Styling
+   DecorHome — Global & Base Styling (Moss Green & Warm Wood Theme)
    ========================================================================== */
 :root {
-    --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-    --card-hover-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.12);
-    --border-subtle: #e2e8f0;
+    --moss-dark: #2c3e2d;
+    --moss-main: #3d5640;
+    --moss-hover: #2f4432;
+    --moss-soft: #edf2ed;
+    --wood-main: #8b5e3c;
+    --wood-hover: #734c2f;
+    --wood-soft: #f6efe8;
+    --gold-warm: #e5b874;
+    --primary-gradient: linear-gradient(135deg, #2c3e2d 0%, #3d5640 100%);
+    --hero-gradient: linear-gradient(135deg, #2b3c2c 0%, #445e46 58%, #8b5e3c 100%);
+    --card-hover-shadow: 0 16px 32px -8px rgba(44, 62, 45, 0.14);
+    --border-subtle: #e5dfd5;
+    --bs-primary: #3d5640;
+    --bs-primary-rgb: 61, 86, 64;
 }
 
 body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #f8fafc;
-    color: #1e293b;
+    background-color: #f9f7f3;
+    color: #262b26;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -20,19 +31,58 @@ main.container {
     flex: 1 0 auto;
 }
 
+/* Override Bootstrap Primary utilities for cohesive Moss Green / Warm Wood theme */
+.btn-primary {
+    background-color: var(--moss-main) !important;
+    border-color: var(--moss-main) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--moss-hover) !important;
+    border-color: var(--moss-hover) !important;
+}
+
+.btn-outline-primary {
+    color: var(--wood-main) !important;
+    border-color: var(--wood-main) !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    background-color: var(--wood-main) !important;
+    border-color: var(--wood-main) !important;
+    color: #ffffff !important;
+}
+
+.text-primary {
+    color: var(--moss-main) !important;
+}
+
+.bg-primary-subtle {
+    background-color: var(--moss-soft) !important;
+}
+
+.border-primary-subtle {
+    border-color: #c5d4c6 !important;
+}
+
 /* ==========================================================================
    Modern Navbar
    ========================================================================== */
 .modern-navbar {
     background: var(--primary-gradient);
-    box-shadow: 0 4px 20px -2px rgba(30, 58, 138, 0.25);
+    box-shadow: 0 4px 20px -2px rgba(44, 62, 45, 0.25);
     backdrop-filter: blur(10px);
     z-index: 1035 !important;
 }
 
 .brand-icon {
     font-size: 1.5rem;
-    color: #ffd166;
+    color: var(--gold-warm);
 }
 
 .brand-text {
@@ -45,6 +95,8 @@ main.container {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: var(--moss-dark) !important;
+    background-color: #f6efe8 !important;
 }
 
 .nav-search-form {
@@ -59,22 +111,22 @@ main.container {
 
 .nav-search-input:focus {
     background-color: #ffffff;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(229, 184, 116, 0.35);
 }
 
 .btn-cart-nav {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff !important;
     transition: all 0.2s ease;
 }
 
 .btn-cart-nav:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.24);
     transform: translateY(-1px);
 }
 
 .user-menu-toggle {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff !important;
 }
 
@@ -84,7 +136,7 @@ main.container {
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(229, 184, 116, 0.35);
     border-radius: 50%;
 }
 
@@ -96,8 +148,8 @@ main.container {
    Hero Banner & Category Sidebar
    ========================================================================== */
 .shop-hero-banner {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
-    box-shadow: 0 12px 30px -10px rgba(37, 99, 235, 0.35);
+    background: var(--hero-gradient);
+    box-shadow: 0 12px 30px -10px rgba(44, 62, 45, 0.32);
 }
 
 .category-sidebar-card {
@@ -105,6 +157,7 @@ main.container {
     max-height: calc(100vh - 105px);
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--border-subtle) !important;
 }
 
 .category-sidebar-card .card-body {
@@ -114,22 +167,22 @@ main.container {
 .category-nav-list .list-group-item {
     border: 0;
     font-weight: 500;
-    color: #475569;
+    color: #4b554b;
     padding: 10px 14px;
     transition: all 0.18s ease;
 }
 
 .category-nav-list .list-group-item:hover {
-    background-color: #f1f5f9;
-    color: #1d4ed8;
+    background-color: var(--wood-soft);
+    color: var(--wood-main);
     transform: translateX(3px);
 }
 
 .category-nav-list .list-group-item.active {
-    background-color: #eff6ff;
-    color: #1d4ed8;
+    background-color: var(--moss-soft);
+    color: var(--moss-dark);
     font-weight: 700;
-    box-shadow: inset 3px 0 0 #2563eb;
+    box-shadow: inset 3px 0 0 var(--moss-main);
 }
 
 /* ==========================================================================
@@ -138,6 +191,7 @@ main.container {
 .product-card {
     transition: transform 0.22s ease, box-shadow 0.22s ease;
     background: #ffffff;
+    border: 1px solid #efeae1 !important;
 }
 
 .product-card:hover {
@@ -146,7 +200,7 @@ main.container {
 }
 
 .product-img-wrapper {
-    background: #f1f5f9;
+    background: #f4f1ea;
     height: 200px;
     display: flex;
     align-items: center;
@@ -166,7 +220,7 @@ main.container {
 }
 
 .product-title-link:hover {
-    color: #2563eb !important;
+    color: var(--wood-main) !important;
 }
 
 .card-title {
@@ -187,7 +241,7 @@ main.container {
 }
 
 .price {
-    color: #dc2626;
+    color: #9a4a2e;
     letter-spacing: -0.3px;
 }
 
@@ -202,6 +256,7 @@ main.container {
    ========================================================================== */
 .product-detail-img-card {
     background: #ffffff;
+    border: 1px solid var(--border-subtle) !important;
 }
 
 .product-detail-img {
@@ -212,8 +267,8 @@ main.container {
 }
 
 .price-box {
-    border-color: #fee2e2 !important;
-    background: #fff5f5 !important;
+    border-color: #ebd9cb !important;
+    background: #fbf7f3 !important;
 }
 
 /* ==========================================================================
@@ -227,12 +282,12 @@ main.container {
     justify-content: center;
     font-weight: 600;
     border: 1px solid var(--border-subtle);
-    color: #475569;
+    color: #4b554b;
 }
 
 .modern-pagination .page-item.active .page-link {
-    background-color: #2563eb;
-    border-color: #2563eb;
+    background-color: var(--moss-main);
+    border-color: var(--moss-main);
     color: #ffffff;
 }
 
@@ -240,10 +295,15 @@ main.container {
     border-color: var(--border-subtle) !important;
 }
 
+/* ==========================================================================
+   DecorHome AI Assistant Chat Widget
+   ========================================================================== */
 .eshop-chat {
-    --chat-blue: #0b5ed7;
-    --chat-ink: #152238;
-    --chat-muted: #637083;
+    --chat-primary: #3d5640;
+    --chat-primary-hover: #2c3e2d;
+    --chat-wood: #8b5e3c;
+    --chat-ink: #262b26;
+    --chat-muted: #666c62;
     color: var(--chat-ink);
     font-family: inherit;
     text-align: left;
@@ -261,8 +321,8 @@ main.container {
     padding: 0 20px;
     border: 0;
     border-radius: 999px;
-    background: var(--chat-blue);
-    box-shadow: 0 8px 28px rgb(16 45 88 / 24%);
+    background: linear-gradient(135deg, #2c3e2d 0%, #3d5640 100%);
+    box-shadow: 0 8px 28px rgba(44, 62, 45, 0.28);
     color: #fff;
     font-size: 15px;
     font-weight: 700;
@@ -271,8 +331,8 @@ main.container {
 }
 
 .eshop-chat__launcher:hover {
-    background: #084db2;
-    box-shadow: 0 10px 32px rgb(16 45 88 / 30%);
+    background: linear-gradient(135deg, #243325 0%, #2f4432 100%);
+    box-shadow: 0 10px 32px rgba(44, 62, 45, 0.36);
     transform: translateY(-2px);
 }
 
@@ -299,10 +359,10 @@ main.container {
     height: min(590px, calc(100dvh - 124px));
     min-height: 380px;
     overflow: hidden;
-    border: 1px solid #dfe5ee;
+    border: 1px solid #dfd8cc;
     border-radius: 18px;
     background: #fff;
-    box-shadow: 0 18px 60px rgb(17 34 61 / 22%);
+    box-shadow: 0 18px 60px rgba(44, 62, 45, 0.22);
     text-align: left;
     animation: eshop-chat-enter .18s ease-out;
 }
@@ -314,7 +374,7 @@ main.container {
     align-items: center;
     gap: 12px;
     padding: 17px 18px;
-    background: #0b5ed7;
+    background: linear-gradient(135deg, #2c3e2d 0%, #3d5640 100%);
     color: #fff;
 }
 
@@ -324,16 +384,16 @@ main.container {
     height: 42px;
     flex: 0 0 42px;
     place-items: center;
-    border: 1px solid rgb(255 255 255 / 45%);
+    border: 1px solid rgba(229, 184, 116, 0.55);
     border-radius: 50%;
-    background: rgb(255 255 255 / 14%);
+    background: rgba(229, 184, 116, 0.22);
     font-size: 13px;
     font-weight: 800;
 }
 
 .eshop-chat__heading { min-width: 0; flex: 1; }
 .eshop-chat__heading h2 { margin: 0; font-size: 16px; font-weight: 700; }
-.eshop-chat__heading p { margin: 3px 0 0; color: rgb(255 255 255 / 82%); font-size: 12px; }
+.eshop-chat__heading p { margin: 3px 0 0; color: rgba(255, 255, 255, 0.82); font-size: 12px; }
 
 .eshop-chat__close {
     display: grid;
@@ -349,7 +409,7 @@ main.container {
     cursor: pointer;
 }
 
-.eshop-chat__close:hover { background: rgb(255 255 255 / 15%); }
+.eshop-chat__close:hover { background: rgba(255, 255, 255, 0.15); }
 
 .eshop-chat__messages {
     display: flex;
@@ -358,7 +418,7 @@ main.container {
     gap: 12px;
     overflow: auto;
     padding: 18px 15px;
-    background: #f7f9fc;
+    background: #faf8f4;
     overscroll-behavior: contain;
 }
 
@@ -372,40 +432,40 @@ main.container {
     overflow-wrap: anywhere;
     white-space: pre-line;
     text-align: left;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 2px 6px rgba(44, 62, 45, 0.05);
 }
 
 .eshop-chat__message--assistant {
     align-self: flex-start;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e5dfd5;
     border-bottom-left-radius: 4px;
     background: #ffffff;
-    color: #1e293b;
+    color: #262b26;
 }
 
 .eshop-chat__message a {
-    color: #0b5ed7;
+    color: var(--chat-wood);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
 }
 
 .eshop-chat__message a:hover {
-    color: #084db2;
+    color: var(--wood-hover);
 }
 
 .eshop-chat__message strong {
     font-weight: 700;
-    color: #0f172a;
+    color: #1f2820;
 }
 
 .eshop-chat__message--user {
     align-self: flex-end;
     border: none;
     border-bottom-right-radius: 4px;
-    background: #0b5ed7;
+    background: var(--chat-primary);
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(11, 94, 215, 0.25);
+    box-shadow: 0 2px 8px rgba(61, 86, 64, 0.25);
 }
 
 .eshop-chat__message--pending { color: var(--chat-muted); }
@@ -413,14 +473,14 @@ main.container {
 .eshop-chat__suggestions button {
     min-height: 36px;
     padding: 6px 10px;
-    border: 1px solid #c9d8ef;
+    border: 1px solid #d6c5b3;
     border-radius: 999px;
     background: #fff;
-    color: #174d91;
+    color: var(--wood-main);
     font-size: 12px;
     cursor: pointer;
 }
-.eshop-chat__suggestions button:hover { background: #edf4ff; }
+.eshop-chat__suggestions button:hover { background: var(--wood-soft); }
 
 .eshop-chat__status { min-height: 18px; margin: 0; padding: 0 16px 5px; color: #a12a35; font-size: 12px; }
 
@@ -430,16 +490,16 @@ main.container {
     gap: 8px;
     margin: 0 14px 4px;
     padding: 6px 6px 6px 14px;
-    border: 1.5px solid #d5dce7;
+    border: 1.5px solid #dcd5c9;
     border-radius: 24px;
-    background: #f8fafc;
+    background: #faf8f4;
     transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
 }
 
 .eshop-chat__form:focus-within {
-    border-color: #0b5ed7;
+    border-color: var(--chat-primary);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.15);
+    box-shadow: 0 0 0 3px rgba(61, 86, 64, 0.15);
 }
 
 .eshop-chat__form textarea {
@@ -462,7 +522,7 @@ main.container {
 }
 
 .eshop-chat__form textarea::placeholder {
-    color: #8c9baa;
+    color: #93988e;
 }
 
 .eshop-chat__form textarea:focus,
@@ -481,14 +541,14 @@ main.container {
     flex: 0 0 36px;
     border: 0;
     border-radius: 50%;
-    background: var(--chat-blue);
+    background: var(--chat-primary);
     color: #fff;
     cursor: pointer;
     transition: transform .15s ease, background-color .15s ease;
 }
 
 .eshop-chat__send:hover:not(:disabled) {
-    background: #084db2;
+    background: var(--chat-primary-hover);
     transform: scale(1.05);
 }
 
@@ -497,8 +557,8 @@ main.container {
 }
 
 .eshop-chat__send:disabled {
-    background: #cbd5e1;
-    color: #94a3b8;
+    background: #d3cec5;
+    color: #9b958b;
     cursor: wait;
     transform: none;
 }
@@ -521,19 +581,19 @@ main.container {
 .eshop-chat__source {
     display: block;
     padding: 9px 10px;
-    border: 1px solid #dce5f1;
+    border: 1px solid #e2d5c6;
     border-radius: 10px;
-    background: #f8fbff;
-    color: #174d91;
+    background: #fcfaf7;
+    color: var(--moss-dark);
     text-decoration: none;
 }
-.eshop-chat__source:hover { border-color: #9ebde8; background: #eef5ff; }
+.eshop-chat__source:hover { border-color: var(--wood-main); background: var(--wood-soft); }
 .eshop-chat__source-name { display: block; font-weight: 700; }
-.eshop-chat__source-meta { display: block; margin-top: 3px; color: #4c5e75; font-size: 12px; }
+.eshop-chat__source-meta { display: block; margin-top: 3px; color: #5f5b53; font-size: 12px; }
 
 .eshop-chat button:focus-visible,
 .eshop-chat a:focus-visible {
-    outline: 2px solid #0b5ed7;
+    outline: 2px solid var(--chat-primary);
     outline-offset: 2px;
 }
 
@@ -561,4 +621,3 @@ main.container {
 @media (prefers-reduced-motion: reduce) {
     .eshop-chat__launcher, .eshop-chat__panel { animation: none; transition: none; }
 }
-

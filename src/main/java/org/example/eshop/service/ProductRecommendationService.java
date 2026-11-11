@@ -234,21 +234,18 @@ public class ProductRecommendationService {
     }
 
     private static final Map<String, List<String>> COMPLEMENTARY_CATEGORIES = Map.ofEntries(
-            Map.entry("bàn phím", List.of("chuột", "màn hình", "laptop", "tai nghe")),
-            Map.entry("chuột", List.of("bàn phím", "màn hình", "laptop", "tai nghe")),
-            Map.entry("màn hình", List.of("laptop", "chuột", "bàn phím", "loa")),
-            Map.entry("laptop", List.of("chuột", "bàn phím", "màn hình", "tai nghe", "lưu trữ")),
-            Map.entry("máy tính bảng", List.of("bàn phím", "tai nghe", "sạc", "điện thoại")),
-            Map.entry("điện thoại", List.of("tai nghe", "sạc", "đồng hồ", "máy tính bảng")),
-            Map.entry("đồng hồ", List.of("điện thoại", "tai nghe", "sạc")),
-            Map.entry("tai nghe", List.of("loa", "điện thoại", "laptop", "đồng hồ")),
-            Map.entry("loa", List.of("tai nghe", "điện thoại", "laptop")),
-            Map.entry("máy ảnh", List.of("lưu trữ", "sạc")),
-            Map.entry("thiết bị lưu trữ", List.of("laptop", "máy in", "thiết bị mạng")),
-            Map.entry("thiết bị mạng", List.of("laptop", "lưu trữ", "máy in")),
-            Map.entry("máy in", List.of("laptop", "lưu trữ")),
-            Map.entry("phụ kiện sạc", List.of("điện thoại", "tai nghe", "đồng hồ", "laptop")),
-            Map.entry("gia dụng", List.of("gia dụng"))
+            Map.entry("đèn trang trí", List.of("tranh treo tường", "gối tựa", "nến thơm", "ghế thư giãn")),
+            Map.entry("tranh treo tường", List.of("đèn trang trí", "đồng hồ treo tường", "gương decor", "bình hoa")),
+            Map.entry("bình hoa", List.of("cây giả", "nến thơm", "kệ gỗ", "tượng")),
+            Map.entry("gương decor", List.of("đèn trang trí", "bình hoa", "nến thơm", "tranh treo tường")),
+            Map.entry("thảm trải sàn", List.of("ghế thư giãn", "gối tựa", "đèn trang trí", "cây giả")),
+            Map.entry("gối tựa", List.of("ghế thư giãn", "thảm trải sàn", "nến thơm", "đèn trang trí")),
+            Map.entry("đồng hồ treo tường", List.of("tranh treo tường", "gương decor", "kệ gỗ")),
+            Map.entry("kệ gỗ", List.of("bình hoa", "cây giả", "tượng", "nến thơm")),
+            Map.entry("nến thơm", List.of("tượng", "bình hoa", "gối tựa", "đèn trang trí")),
+            Map.entry("cây giả", List.of("bình hoa", "kệ gỗ", "thảm trải sàn", "ghế thư giãn")),
+            Map.entry("tượng", List.of("kệ gỗ", "bình hoa", "nến thơm", "tranh treo tường")),
+            Map.entry("ghế thư giãn", List.of("gối tựa", "thảm trải sàn", "đèn trang trí", "cây giả"))
     );
 
     private List<Product> findComplementaryProducts(Product currentProduct, Set<Long> excludedIds, int limit) {
@@ -331,10 +328,10 @@ public class ProductRecommendationService {
                 : product.getName();
     }
 
-    private static final Set<String> SMART_HOME_KEYWORDS = Set.of("gia dụng", "nồi chiên", "máy lọc", "robot hút bụi");
+    private static final Set<String> AROMATHERAPY_KEYWORDS = Set.of("nến thơm", "tinh dầu");
 
     /**
-     * Smart home products must NEVER mix with personal IT/electronics products.
+     * Phối hợp các sản phẩm decor nội thất hài hoà theo không gian sống.
      */
     private boolean isCategoryCompatible(Product currentProduct, Product candidate) {
         if (currentProduct.getCategory() == null || candidate.getCategory() == null) {
@@ -343,10 +340,12 @@ public class ProductRecommendationService {
         String currentCat = currentProduct.getCategory().getName().toLowerCase();
         String candidateCat = candidate.getCategory().getName().toLowerCase();
 
-        boolean currentIsSmartHome = SMART_HOME_KEYWORDS.stream().anyMatch(currentCat::contains);
-        boolean candidateIsSmartHome = SMART_HOME_KEYWORDS.stream().anyMatch(candidateCat::contains);
-
-        return currentIsSmartHome == candidateIsSmartHome;
+        // Giữ đồ hương thơm tập trung vào không gian thư giãn (nến, đèn, bình gốm, gối, tượng)
+        boolean currentIsAroma = AROMATHERAPY_KEYWORDS.stream().anyMatch(currentCat::contains);
+        if (currentIsAroma && (candidateCat.contains("kệ gỗ") || candidateCat.contains("thảm"))) {
+            return false;
+        }
+        return true;
     }
 
     private List<Product> findVectorRecommendations(String query, Set<Long> excludedProductIds) {
