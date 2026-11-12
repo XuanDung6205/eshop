@@ -18,7 +18,7 @@ Example:
 
 The endpoint returns `202 Accepted` for a valid event, `400 Bad Request` for invalid data or server-owned event types, and `403 Forbidden` without a valid CSRF token. It does not return stored event data.
 
-On startup, `db/tracking-schema.sql` creates the `tracking_event` table if it is absent. The existing `spring.jpa.hibernate.ddl-auto=none` setting remains in force; Hibernate does not alter the rest of the database schema.
+Legacy tracking initialization SQL has been removed. The new `furniture_shop` bootstrap in `docs/database/V001__create_furniture_shop.sql` creates `tracking_events`. Automatic SQL initialization is disabled and `spring.jpa.hibernate.ddl-auto=none` remains in force. The Java tracking entity still maps the old singular table name and must be migrated before this flow can run against the furniture schema. The remaining contract below documents that existing implementation.
 
 | Event type | Recorded by | Meaning |
 | --- | --- | --- |

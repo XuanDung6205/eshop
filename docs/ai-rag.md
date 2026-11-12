@@ -19,7 +19,7 @@ The cloud embedding and chat models need a Google Gemini API key. Keep it outsid
 export GEMINI_API_KEY='your-key'
 ```
 
-The application also needs MariaDB `11.7+`, because the configured Spring AI MariaDB Vector Store uses the `VECTOR` type. Start with the schema from `docs/eShop.sql`, then let Spring AI create its vector-store table with `spring.ai.vectorstore.mariadb.initialize-schema=true`. The first indexing run calls the embedding model and therefore also needs `GEMINI_API_KEY`.
+The configured database is now `furniture_shop`; see `docs/database/README.md` for its versioned bootstrap. Legacy database initialization scripts have been removed, and automatic SQL/vector schema initialization is disabled. This document describes the existing Java RAG flow, which still needs to be migrated to the furniture entities before running against the new database. Create the Spring AI vector-store schema through a dedicated migration at that stage. The first indexing run calls the embedding model and therefore also needs `GEMINI_API_KEY`.
 
 Without a key, unit tests that mock the AI and vector services still run, but a live RAG request cannot create embeddings or call Gemini. The key must never be committed to `application.properties`.
 
