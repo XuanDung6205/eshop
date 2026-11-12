@@ -172,7 +172,7 @@ class ProductServiceTest {
                 .metadata(Map.of("productId", 3L, "sourceType", "NAME")).score(0.65).build();
 
         when(productRepository.findCategoryIdsMentionedInQuery("điện thoại xấu")).thenReturn(List.of(1L));
-        when(productVectorService.search("điện thoại xấu", 20))
+        when(productVectorService.search("điện thoại xấu", 24))
                 .thenReturn(List.of(phoneDoc, lowScoreDoc, vacuumDoc));
         when(productRepository.findAllById(List.of(1L, 2L, 3L)))
                 .thenReturn(List.of(phone, lowScorePhone, vacuum));

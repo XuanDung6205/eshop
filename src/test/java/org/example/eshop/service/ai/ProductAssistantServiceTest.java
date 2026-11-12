@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
 import org.mockito.ArgumentCaptor;
@@ -52,7 +53,7 @@ class ProductAssistantServiceTest {
         when(vectorService.search("điện thoại pin tốt", 5)).thenReturn(List.of(
                 new Document("vector-15", "iPhone 15", Map.of("productId", 15L))));
         when(productRepository.findAllById(any())).thenReturn(List.of(product));
-        when(aiChatService.chatWithContext(any(), any())).thenReturn("Có iPhone 15 phù hợp.");
+        when(aiChatService.chatWithContext(any(), any(), eq(""))).thenReturn("Có iPhone 15 phù hợp.");
 
         ProductAssistantService.RagAnswer answer = assistantService.ask("điện thoại pin tốt");
 
@@ -63,7 +64,7 @@ class ProductAssistantServiceTest {
         assertEquals(7, answer.sources().get(0).quantity());
 
         ArgumentCaptor<String> context = ArgumentCaptor.forClass(String.class);
-        verify(aiChatService).chatWithContext(eq("điện thoại pin tốt"), context.capture());
+        verify(aiChatService).chatWithContext(eq("điện thoại pin tốt"), context.capture(), eq(""));
         assertTrue(context.getValue().contains("Giá hiện tại: 19990000 VND"));
         assertTrue(context.getValue().contains("Tồn kho hiện tại: 7 sản phẩm"));
         assertTrue(context.getValue().contains("Mô tả: Camera tốt, pin dùng cả ngày"));
@@ -79,7 +80,7 @@ class ProductAssistantServiceTest {
         assertTrue(answer.reply().contains("chưa tìm thấy"));
         assertTrue(answer.sources().isEmpty());
         verify(productRepository, never()).findAllById(any());
-        verify(aiChatService, never()).chatWithContext(any(), any());
+        verifyNoInteractions(aiChatService);
     }
 
     @Test
