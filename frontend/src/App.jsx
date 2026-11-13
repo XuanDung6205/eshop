@@ -1,0 +1,52 @@
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { createApiClient } from './lib/apiClient';
+import { SessionContext } from './lib/session';
+import { ErrorNotice, Icon, Loading } from './components/ui';
+import CartPage from './features/cart/CartPage';
+import LoginPage from './features/auth/LoginPage';
+import CouponAdminPage from './features/promotions/CouponAdminPage';
+
+export default function App() {
+  const [api] = useState(() => createApiClient());
+  const [session, setSession] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    let active = true;
+    setError(null);
+    api.request('/session').then(value => { if (active) setSession(value); }).catch(value => { if (active) setError(value); });
+    return () => { active = false; };
+  }, [api, revision]);
+  useEffect(() => { document.title = `${location.pathname.startsWith('/admin') ? 'Quản lý ưu đãi' : location.pathname === '/login' ? 'Đăng nhập' : 'Giỏ hàng'} · Nếp Nhà`; }, [location.pathname]);
+  const isStaff = session?.user?.roles?.some(role => role === 'STAFF' || role === 'ADMIN');
+  async function logout() {
+    setBusy(true); setError(null);
+    try { setSession(await api.logout()); navigate('/cart'); setRevision(value => value + 1); }
+    catch (value) { setError(value); }
+    finally { setBusy(false); }
+  }
+  return <SessionContext.Provider value={{ api, session, setSession, isStaff }}>
+    <a className="skip-link" href="#main">Đến nội dung chính</a>
+    <div className="announcement">Một chút tinh tế. Một tổ ấm riêng bạn.</div>
+    <header className="site-header"><div className="header-inner">
+      <Link to="/cart" className="brand" aria-label="Nếp Nhà — Trang giỏ hàng"><span className="brand-mark"><Icon name="leaf" size={27} /></span><span>Nếp Nhà<small>NỘI THẤT & KHÔNG GIAN SỐNG</small></span></Link>
+      <nav className="main-nav" aria-label="Điều hướng chính"><NavLink to="/cart"><Icon name="bag" />Giỏ hàng</NavLink>{isStaff && <NavLink to="/admin/coupons"><Icon name="ticket" />Quản lý ưu đãi</NavLink>}</nav>
+      <div className="account-nav">{session?.authenticated ? <><span className="account-name"><Icon name="user" />{session.user.fullName || session.user.username}</span><button className="text-button" disabled={busy} onClick={logout}>{busy ? 'Đang thoát…' : 'Đăng xuất'}</button></> : <NavLink to="/login" className="login-link"><Icon name="user" />Đăng nhập</NavLink>}</div>
+    </div></header>
+    <main id="main" className="page-shell" tabIndex="-1">
+      <ErrorNotice error={error} onRetry={() => setRevision(value => value + 1)} />
+      {!session ? !error && <Loading text="Đang kết nối cửa hàng…" /> : <Routes>
+        <Route path="/cart" element={<CartPage key={`${session.user?.id ?? 'guest'}-${revision}`} />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/coupons" element={isStaff ? <CouponAdminPage /> : <section className="access-state panel"><Icon name="shield" size={40} /><h1>Khu vực dành cho nhân viên</h1><p>Bạn cần tài khoản nhân viên hoặc quản trị viên để quản lý ưu đãi.</p><Link to="/login" className="button">Đăng nhập tài khoản khác</Link></section>} />
+        <Route path="/" element={<Navigate to="/cart" replace />} />
+        <Route path="*" element={<section className="access-state panel"><h1>Chưa tìm thấy trang này</h1><Link to="/cart" className="button">Về giỏ hàng</Link></section>} />
+      </Routes>}
+    </main>
+    <footer className="site-footer"><Link to="/cart" className="footer-brand">Nếp Nhà.</Link><span>Chọn điều giản dị, sống thật an yên.</span><span>Nội thất cho tổ ấm của bạn</span></footer>
+  </SessionContext.Provider>;
+}

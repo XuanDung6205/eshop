@@ -15,7 +15,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
+@SpringBootTest(classes=org.example.eshop.EshopApplication.class)
 @EnabledIfEnvironmentVariable(named = "GEMINI_EMBEDDING_LIVE_TEST", matches = "true")
 class SpringAiVectorLiveTest {
 

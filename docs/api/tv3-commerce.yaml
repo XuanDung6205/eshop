@@ -1,0 +1,895 @@
+openapi: 3.0.3
+info:
+  title: TV3 Furniture Commerce API
+  version: 1.0.0
+  description: Implemented scope TV3-01/02/03 only. Session/CSRF, DB cart, read-only catalog bridge, coupon administration/calculation.
+    Orders/payment/checkout are not implemented.
+servers:
+- url: http://localhost:8080
+  description: Local Spring Boot commerce runtime
+tags:
+- name: Session
+- name: Cart
+- name: Catalog
+- name: Coupons
+paths:
+  /api/csrf:
+    get:
+      operationId: getCsrf
+      summary: Fetch current CSRF token
+      tags:
+      - Session
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Csrf'
+        '400': &id001
+          description: Invalid request or field validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401': &id002
+          description: Session authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403': &id003
+          description: Role denied or CSRF token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404': &id004
+          description: Resource unavailable or belongs to another cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409': &id005
+          description: Current data conflict, coupon referenced, or stock insufficient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/session:
+    get:
+      operationId: getSession
+      summary: Get safe current actor/session
+      tags:
+      - Session
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+  /api/session/login:
+    post:
+      operationId: login
+      summary: Sign in with directory-backed session
+      tags:
+      - Session
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      description: Refresh CSRF after login and explicitly merge guest cart. Password is never returned.
+      parameters:
+      - &id006
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        description: Get token from GET /api/csrf. Refresh after login/logout.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+              required:
+              - username
+              - password
+  /api/session/logout:
+    post:
+      operationId: logout
+      summary: Sign out and invalidate session
+      tags:
+      - Session
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+  /api/cart:
+    get:
+      operationId: getCart
+      summary: Get own cart and live SKU prices
+      tags:
+      - Cart
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+  /api/cart/items:
+    post:
+      operationId: addCartItem
+      summary: Add an active SKU without reserving stock
+      tags:
+      - Cart
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItem'
+    delete:
+      operationId: clearCart
+      summary: Clear only the current actor cart
+      tags:
+      - Cart
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+  /api/cart/items/{id}:
+    patch:
+      operationId: updateCartItem
+      summary: Set own cart-line quantity
+      tags:
+      - Cart
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+      - &id007
+        name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartItem'
+    delete:
+      operationId: removeCartItem
+      summary: Remove own cart line
+      tags:
+      - Cart
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+      - *id007
+  /api/cart/merge:
+    post:
+      operationId: mergeCart
+      summary: Consume guest cart into current authenticated user once
+      tags:
+      - Cart
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      description: Preserves inactive/over-stock lines with warnings; clears guest cookie after success.
+      parameters:
+      - *id006
+  /api/commerce/catalog/variants:
+    get:
+      operationId: searchVariants
+      summary: Read-only SKU integration bridge
+      tags:
+      - Catalog
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters: &id008
+      - name: query
+        in: query
+        schema:
+          type: string
+          default: ''
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+  /api/admin/coupons:
+    get:
+      operationId: listCoupons
+      summary: 'STAFF/ADMIN: search and paginate coupons'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponPage'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters: *id008
+    post:
+      operationId: createCoupon
+      summary: 'STAFF/ADMIN: create coupon'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id006
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponInput'
+  /api/admin/coupons/{id}:
+    get:
+      operationId: getCoupon
+      summary: 'STAFF/ADMIN: coupon detail'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      parameters:
+      - *id007
+    patch:
+      operationId: patchCoupon
+      summary: 'STAFF/ADMIN: partially edit or deactivate coupon'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      description: Nullable fields can explicitly be cleared with null. Referenced coupon code cannot be renamed;
+        use isActive=false.
+      parameters:
+      - *id006
+      - *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponPatch'
+    delete:
+      operationId: deleteCoupon
+      summary: 'STAFF/ADMIN: delete only unreferenced coupon'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '204':
+          description: Deleted
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      description: 409 COUPON_IN_USE if order/redemption references exist; deactivate instead.
+      parameters:
+      - *id006
+      - *id007
+  /api/admin/coupons/{id}/preview:
+    post:
+      operationId: previewCoupon
+      summary: 'STAFF/ADMIN: calculate merchandise-only discount'
+      tags:
+      - Coupons
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponPreview'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+      description: Checks active/date/minimum/value/cap. Does not reserve usage or prove checkout eligibility; usage
+        concurrency is TV3-05.
+      parameters:
+      - *id006
+      - *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponPreviewInput'
+  /api/commerce/runtime:
+    get:
+      operationId: getCommerceRuntime
+      summary: Read runtime identity and isolated-test-data flag
+      tags:
+      - Session
+      security: []
+      responses:
+        '200':
+          description: Runtime identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeInfo'
+components:
+  securitySchemes:
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: HttpOnly same-origin session; unsafe methods also require X-CSRF-TOKEN.
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - code
+      - message
+      - fieldErrors
+    Csrf:
+      type: object
+      properties:
+        token:
+          type: string
+        headerName:
+          type: string
+          example: X-CSRF-TOKEN
+      required:
+      - token
+      - headerName
+    SessionUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        fullName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - ADMIN
+            - STAFF
+            - CUSTOMER
+      required:
+      - id
+      - username
+      - fullName
+      - roles
+    Session:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/SessionUser'
+          nullable: true
+      required:
+      - authenticated
+      - user
+    CartWarning:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        itemId:
+          type: integer
+          format: int64
+      required:
+      - code
+      - message
+      - itemId
+    CartLine:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        variantId:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+          nullable: true
+        sku:
+          type: string
+        productName:
+          type: string
+        variantName:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        unitPrice: &id009
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
+          example: '12900000.00'
+          description: Exact decimal amount; client must not calculate checkout totals.
+        lineTotal:
+          type: string
+          pattern: ^[0-9]+\.[0-9]{2}$
+          description: Exact decimal response total. Display only; checkout later enforces its own monetary bounds.
+        availableQuantity:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+        issues:
+          type: array
+          items:
+            type: string
+      required:
+      - id
+      - variantId
+      - productId
+      - sku
+      - productName
+      - variantName
+      - imageUrl
+      - quantity
+      - unitPrice
+      - lineTotal
+      - availableQuantity
+      - active
+      - issues
+    Cart:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        itemCount:
+          type: integer
+          format: int64
+          minimum: 0
+        subtotal:
+          type: string
+          pattern: ^[0-9]+\.[0-9]{2}$
+          description: Exact decimal response total. Display only; checkout later enforces its own monetary bounds.
+        currency:
+          type: string
+          enum:
+          - VND
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartLine'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartWarning'
+      required:
+      - id
+      - itemCount
+      - subtotal
+      - currency
+      - items
+      - warnings
+    AddCartItem:
+      type: object
+      properties:
+        variantId:
+          type: integer
+          format: int64
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+      required:
+      - variantId
+      - quantity
+    UpdateCartItem:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+      required:
+      - quantity
+    CatalogVariant:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        sku:
+          type: string
+        productName:
+          type: string
+        variantName:
+          type: string
+        price: *id009
+        imageUrl:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        availableQuantity:
+          type: integer
+          minimum: 0
+    CouponInput:
+      type: object
+      properties: &id010
+        code: &id011
+          type: string
+          maxLength: 50
+          description: Trimmed and canonicalized to uppercase; A-Z0-9_- only.
+        name: &id012
+          type: string
+          maxLength: 150
+          nullable: true
+        discountType: &id013
+          type: string
+          enum:
+          - PERCENT
+          - FIXED
+        discountValue: &id014
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
+          example: '12900000.00'
+          description: Positive; percentage must not exceed 100.
+        maxDiscountAmount: &id015
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
+          example: '12900000.00'
+          description: Positive or null.
+          nullable: true
+        minimumOrderAmount: &id016
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
+          example: '12900000.00'
+          description: Exact decimal amount; client must not calculate checkout totals.
+          default: '0.00'
+        totalUsageLimit: &id017
+          type: integer
+          minimum: 1
+          nullable: true
+        perUserLimit: &id018
+          type: integer
+          minimum: 1
+          nullable: true
+        startsAt: &id019
+          type: string
+          format: date-time
+          example: '2026-11-13T10:00:00Z'
+        endsAt: &id020
+          type: string
+          format: date-time
+          example: '2026-11-13T10:00:00Z'
+          description: Must be after startsAt.
+        isActive: &id021
+          type: boolean
+          default: true
+      required:
+      - code
+      - discountType
+      - discountValue
+      - startsAt
+      - endsAt
+      additionalProperties: false
+    CouponPreviewInput:
+      type: object
+      properties:
+        merchandiseAmount: *id009
+      required:
+      - merchandiseAmount
+    CouponPreview:
+      type: object
+      properties:
+        discountAmount: *id009
+        remainingAmount: *id009
+        currency:
+          type: string
+          enum:
+          - VND
+      required:
+      - discountAmount
+      - remainingAmount
+      - currency
+    CouponPatch:
+      type: object
+      properties: *id010
+      minProperties: 1
+      additionalProperties: false
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code: *id011
+        name: *id012
+        discountType: *id013
+        discountValue: *id014
+        maxDiscountAmount: *id015
+        minimumOrderAmount: *id016
+        totalUsageLimit: *id017
+        perUserLimit: *id018
+        startsAt: *id019
+        endsAt: *id020
+        isActive: *id021
+        createdAt: *id019
+        updatedAt: *id019
+      required:
+      - id
+      - code
+      - name
+      - discountType
+      - discountValue
+      - maxDiscountAmount
+      - minimumOrderAmount
+      - totalUsageLimit
+      - perUserLimit
+      - startsAt
+      - endsAt
+      - isActive
+      - createdAt
+      - updatedAt
+    CouponPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coupon'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+    CatalogPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogVariant'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+    RuntimeInfo:
+      type: object
+      required:
+      - application
+      - isolatedData
+      properties:
+        application:
+          type: string
+          enum:
+          - tv3-commerce
+        isolatedData:
+          type: boolean
+          description: True only for explicitly named TV3 demo/test schemas. No database name or credential is exposed.
