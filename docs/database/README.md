@@ -92,9 +92,11 @@ Database đã chặn nhiều lỗi theo dòng, unique và FK ghép. Những đi�
 
 Cấu hình kết nối đã chuyển sang `furniture_shop`, có thể ghi đè bằng `DB_URL`; username lấy từ `DB_USERNAME` (mặc định `root`), mật khẩu lấy từ biến môi trường bắt buộc `DB_PASSWORD`. Không ghi mật khẩu trực tiếp vào source. SQL tự khởi tạo và vector schema tự khởi tạo đều đã tắt; Hibernate vẫn dùng `ddl-auto=none`.
 
-Khóa JWT lấy từ biến môi trường bắt buộc `JWT_SECRET` (Base64 của ít nhất 32 byte ngẫu nhiên). `.env.example` liệt kê tên biến nhưng không chứa secret; Spring Boot không tự nạp file này, cần cấu hình environment trong terminal/IDE hoặc Docker Compose. File `.env` và `.env.*` cục bộ được Git bỏ qua.
+Ứng dụng legacy dùng `JWT_SECRET` (Base64 của ít nhất 32 byte ngẫu nhiên). Runtime commerce mới dùng session/CSRF, không yêu cầu JWT/Gemini cho giỏ/coupon. `.env.example` liệt kê tên biến nhưng không chứa secret; Spring Boot không tự nạp file này, cần cấu hình environment trong terminal/IDE hoặc Docker Compose. File `.env` và `.env.*` cục bộ được Git bỏ qua.
 
-Java entity và repository chưa chuyển đổi. App cũ không chạy được trên schema mới chỉ bằng đổi tên DB: cần ánh xạ SKU/tồn kho, snapshot đơn, quyền, trạng thái, giỏ DB, các cột generated và tên `tracking_events` mới. Chưa khởi chạy app với database mới trong bước dọn SQL/cấu hình này.
+TV3-01/02/03 đã triển khai CartEntity/CartItemEntity/CouponEntity, REST API và React trong `org.example.eshop.commerce.CommerceApplication`; mặc định Maven chạy runtime này, chỉ scan commerce và validate các Entity của nó. Các adapter đọc users/roles/SKU/tồn từ bảng thật. Đơn hàng, checkout, payment, tracking và các module còn lại chưa migrate; code legacy vẫn được giữ riêng, không được tự động nạp vào commerce.
+
+Hướng frontend là **React**, backend **Spring Boot REST API**. Source vẫn chứa Thymeleaf/MVC legacy ngoài runtime commerce. Xem `docs/TV3_HUONG_DAN_CHAY_VA_DEMO.md` để chạy phần TV3 và database demo cô lập. Không cần đổi schema chỉ vì đổi frontend.
 
 Chưa nhập dữ liệu từ `eshop`, chưa thêm sản phẩm/ảnh mẫu, chưa tạo người dùng đăng nhập. Seed chỉ có ADMIN, STAFF, CUSTOMER và kho MAIN. Các lần verification rollback dữ liệu nghiệp vụ.
 

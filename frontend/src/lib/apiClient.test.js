@@ -1,0 +1,37 @@
+import { describe, expect, it, vi } from 'vitest';
+import { createApiClient } from './apiClient';
+
+const response = (body, status = 200) => new Response(body == null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+describe('session and CSRF boundary', () => {
+  it('uses the renewed CSRF token for the explicit post-login cart merge and refreshes again after logout', async () => {
+    const calls = [];
+    let token = 'guest-token';
+    const fetcher = vi.fn(async (url, options) => {
+      calls.push({ url, ...options });
+      if (url === '/api/csrf') return response({ token, headerName: 'X-CSRF-TOKEN' });
+      if (url === '/api/session/login') { token = 'user-token'; return response({ authenticated: true, user: { id: 1, username: 'customer', fullName: 'An', roles: ['CUSTOMER'] } }); }
+      if (url === '/api/session/logout') { token = 'next-guest-token'; return response({ authenticated: false, user: null }); }
+      if (url === '/api/cart/merge') return response({ id: 1, itemCount: 0, subtotal: '0.00', currency: 'VND', items: [], warnings: [] });
+      return response({});
+    });
+    const api = createApiClient(fetcher);
+    await api.login('an@example.com', 'a&b=c');
+    await api.mergeCart();
+    await api.logout();
+    await api.request('/cart/items', { method: 'POST', body: { variantId: 12, quantity: 1 } });
+    expect(calls.map(c => c.url)).toEqual(['/api/csrf', '/api/session/login', '/api/csrf', '/api/cart/merge', '/api/session/logout', '/api/csrf', '/api/cart/items']);
+    expect(calls[1].headers['X-CSRF-TOKEN']).toBe('guest-token');
+    expect(new URLSearchParams(calls[1].body).get('password')).toBe('a&b=c');
+    expect(calls[3].headers['X-CSRF-TOKEN']).toBe('user-token');
+    expect(calls[6].headers['X-CSRF-TOKEN']).toBe('next-guest-token');
+    expect(calls.every(c => c.credentials === 'include')).toBe(true);
+  });
+
+  it('retains structured field errors and never silently retries a rejected mutation', async () => {
+    const fetcher = vi.fn(async url => url === '/api/csrf' ? response({ token: 't', headerName: 'X-CSRF-TOKEN' }) : response({ code: 'COUPON_IN_USE', message: 'Hãy tắt mã thay vì xóa.', fieldErrors: { code: 'Mã đã được tham chiếu' } }, 409));
+    const api = createApiClient(fetcher);
+    await expect(api.request('/admin/coupons/4', { method: 'DELETE' })).rejects.toMatchObject({ status: 409, code: 'COUPON_IN_USE', fieldErrors: { code: 'Mã đã được tham chiếu' } });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+});

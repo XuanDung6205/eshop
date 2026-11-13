@@ -1,0 +1,181 @@
+import React from 'react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import App from './App';
+import { cart, chair, coupon, emptyCart, guest, page, staff } from './test/fixtures';
+
+afterEach(() => vi.unstubAllGlobals());
+function mount(path, handlers = {}, session = guest) {
+  const calls = [];
+  vi.stubGlobal('fetch', vi.fn(async (url, options = {}) => {
+    const method = options.method || 'GET';
+    calls.push({ url, ...options, method });
+    const handler = handlers[`${method} ${url}`];
+    let body;
+    let status = 200;
+    if (handler) { const result = typeof handler === 'function' ? handler(options) : handler; body = result.body ?? result; status = result.status ?? 200; }
+    else if (url === '/api/session') body = session;
+    else if (url === '/api/csrf') body = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
+    else if (url === '/api/cart') body = cart;
+    else if (url.startsWith('/api/commerce/catalog/variants')) body = page([chair]);
+    else if (url.startsWith('/api/admin/coupons?')) body = page([coupon]);
+    else throw new Error(`Unexpected HTTP ${method} ${url}`);
+    return new Response(status === 204 ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  }));
+  render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
+  return { user: userEvent.setup(), calls };
+}
+
+it('renders server totals, updates line quantity and supports removal', async () => {
+  const { user, calls } = mount('/cart', {
+    'PATCH /api/cart/items/8': { ...cart, itemCount: 3, subtotal: '3750000.00', items: [{ ...cart.items[0], quantity: 3, lineTotal: '3750000.00' }] },
+    'DELETE /api/cart/items/8': emptyCart,
+  });
+  await within(await screen.findByRole('region', { name: 'Sản phẩm trong giỏ' })).findByRole('heading', { name: 'Ghế gỗ sồi' });
+  expect(screen.getByTestId('cart-subtotal')).toHaveTextContent('2.500.000 ₫');
+  await user.click(screen.getByRole('button', { name: 'Tăng số lượng Ghế gỗ sồi' }));
+  await waitFor(() => expect(screen.getByTestId('cart-subtotal')).toHaveTextContent('3.750.000 ₫'));
+  expect(JSON.parse(calls.find(c => c.method === 'PATCH').body)).toEqual({ quantity: 3 });
+  await user.click(screen.getByRole('button', { name: 'Xóa Ghế gỗ sồi' }));
+  await screen.findByText('Giỏ hàng đang chờ bạn');
+});
+
+it('searches the real catalog bridge and adds the chosen variant', async () => {
+  const { user, calls } = mount('/cart', { 'POST /api/cart/items': cart }, guest);
+  await screen.findByRole('button', { name: 'Thêm Ghế gỗ sồi vào giỏ' });
+  await user.type(screen.getByLabelText('Tìm sản phẩm'), 'gỗ');
+  await user.click(screen.getByRole('button', { name: 'Tìm kiếm' }));
+  await waitFor(() => expect(calls.some(c => c.url.includes('query=g%E1%BB%97'))).toBe(true));
+  await user.click(screen.getByRole('button', { name: 'Thêm Ghế gỗ sồi vào giỏ' }));
+  await waitFor(() => expect(calls.some(c => c.method === 'POST' && c.url === '/api/cart/items')).toBe(true));
+  expect(JSON.parse(calls.find(c => c.method === 'POST' && c.url === '/api/cart/items').body)).toEqual({ variantId: 12, quantity: 1 });
+});
+
+it('keeps excess-stock lines visible with server warnings and allows reducing quantity', async () => {
+  mount('/cart', { 'GET /api/cart': { ...cart, warnings: [{ code: 'INSUFFICIENT_STOCK', message: 'Chỉ còn 1 sản phẩm trong kho.', itemId: 8 }], items: [{ ...cart.items[0], availableQuantity: 1, issues: ['INSUFFICIENT_STOCK'] }] } });
+  await screen.findByText('Chỉ còn 1 sản phẩm trong kho.');
+  expect(screen.getByRole('button', { name: 'Tăng số lượng Ghế gỗ sồi' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Giảm số lượng Ghế gỗ sồi' })).toBeEnabled();
+});
+
+it('logs in, explicitly merges the guest cart, then shows the merged server state', async () => {
+  const { user, calls } = mount('/login', { 'POST /api/session/login': staff, 'POST /api/cart/merge': cart });
+  await screen.findByLabelText('Tên đăng nhập');
+  await user.type(screen.getByLabelText('Tên đăng nhập'), 'staff');
+  await user.type(screen.getByLabelText('Mật khẩu', { exact: true }), 'secret');
+  await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+  await screen.findByRole('heading', { name: /Giỏ hàng của bạn/ });
+  expect(calls.filter(c => c.url === '/api/cart/merge')).toHaveLength(1);
+  expect(screen.getByRole('link', { name: 'Quản lý ưu đãi' })).toBeInTheDocument();
+});
+
+it('shows a recoverable merge failure after successful login without losing the authenticated session', async () => {
+  const { user } = mount('/login', { 'POST /api/session/login': staff, 'POST /api/cart/merge': { status: 409, body: { code: 'QUANTITY_OVERFLOW', message: 'Số lượng sau khi gộp quá lớn.', fieldErrors: {} } } });
+  await screen.findByLabelText('Tên đăng nhập');
+  await user.type(screen.getByLabelText('Tên đăng nhập'), 'staff');
+  await user.type(screen.getByLabelText('Mật khẩu', { exact: true }), 'secret');
+  await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+  await screen.findByText('Số lượng sau khi gộp quá lớn.');
+  expect(screen.getByRole('button', { name: 'Thử gộp lại' })).toBeEnabled();
+  expect(screen.getByRole('link', { name: 'Quản lý ưu đãi' })).toBeInTheDocument();
+});
+
+it('protects the coupon screen for non-staff sessions', async () => {
+  const { calls } = mount('/admin/coupons');
+  await screen.findByText('Khu vực dành cho nhân viên');
+  expect(calls.some(c => c.url.startsWith('/api/admin/coupons'))).toBe(false);
+});
+
+it('edits all coupon fields, preserves UTC precision and clears nullable limits', async () => {
+  const { user, calls } = mount('/admin/coupons', { 'PATCH /api/admin/coupons/5': coupon }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Sửa NHA10' }));
+  const form = screen.getByRole('form', { name: 'Thông tin mã ưu đãi' });
+  await user.clear(within(form).getByLabelText('Giảm tối đa (₫)'));
+  await user.clear(within(form).getByLabelText('Tổng lượt sử dụng'));
+  await user.clear(within(form).getByLabelText('Lượt mỗi tài khoản'));
+  await user.click(within(form).getByRole('button', { name: 'Lưu thay đổi' }));
+  await waitFor(() => expect(calls.some(c => c.method === 'PATCH')).toBe(true));
+  expect(JSON.parse(calls.find(c => c.method === 'PATCH').body)).toEqual({ code: 'NHA10', name: 'Ưu đãi tổ ấm', discountType: 'PERCENT', discountValue: '10.00', maxDiscountAmount: null, minimumOrderAmount: '1000000.00', totalUsageLimit: null, perUserLimit: null, startsAt: '2026-11-13T08:15:31.125Z', endsAt: '2026-12-13T08:15:31.125Z', isActive: true });
+});
+
+it('handles referenced coupon deletion as a conflict and offers deactivation', async () => {
+  const { user } = mount('/admin/coupons', { 'DELETE /api/admin/coupons/5': { status: 409, body: { code: 'COUPON_IN_USE', message: 'Mã đã được sử dụng. Hãy tắt mã thay vì xóa.', fieldErrors: {} } } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Xóa NHA10' }));
+  await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }));
+  await screen.findByText('Mã đã được sử dụng. Hãy tắt mã thay vì xóa.');
+  expect(screen.getByRole('button', { name: 'Tắt NHA10' })).toBeEnabled();
+});
+
+it('previews a saved coupon using the server calculation, retaining decimal strings', async () => {
+  const { user, calls } = mount('/admin/coupons', { 'POST /api/admin/coupons/5/preview': { discountAmount: '100000.00', remainingAmount: '900000.00', currency: 'VND' } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Xem thử NHA10' }));
+  await user.type(screen.getByLabelText('Tiền hàng để tính thử (₫)'), '1000000.00');
+  await user.click(screen.getByRole('button', { name: 'Tính ưu đãi' }));
+  await screen.findByText('900.000 ₫');
+  expect(JSON.parse(calls.find(c => c.url.endsWith('/preview')).body)).toEqual({ merchandiseAmount: '1000000.00' });
+});
+
+it('requires confirmation before clearing the cart and replaces totals from the response', async () => {
+  const { user, calls } = mount('/cart', { 'DELETE /api/cart/items': emptyCart });
+  await screen.findByRole('button', { name: 'Xóa tất cả' });
+  await user.click(screen.getByRole('button', { name: 'Xóa tất cả' }));
+  expect(calls.some(c => c.method === 'DELETE')).toBe(false);
+  await user.click(screen.getByRole('button', { name: 'Đồng ý xóa hết' }));
+  await screen.findByText('Giỏ hàng đang chờ bạn');
+  expect(screen.getByTestId('cart-subtotal')).toHaveTextContent('0 ₫');
+});
+
+it('creates a fixed-value coupon, normalizes its code and leaves optional limits null', async () => {
+  const { user, calls } = mount('/admin/coupons', { 'POST /api/admin/coupons': { ...coupon, code: 'NHA_MOI', discountType: 'FIXED' } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Tạo mã mới' }));
+  const form = within(screen.getByRole('form', { name: 'Thông tin mã ưu đãi' }));
+  await user.type(form.getByLabelText('Mã ưu đãi'), 'nha_moi');
+  await user.selectOptions(form.getByLabelText('Hình thức giảm'), 'FIXED');
+  await user.type(form.getByLabelText('Giá trị giảm (₫)'), '150000.25');
+  fireEvent.change(form.getByLabelText('Bắt đầu'), { target: { value: '2027-01-01T10:00' } });
+  fireEvent.change(form.getByLabelText('Kết thúc'), { target: { value: '2027-02-01T10:00' } });
+  await user.click(form.getByLabelText('Cho phép sử dụng mã'));
+  await user.click(form.getByRole('button', { name: 'Tạo mã ưu đãi' }));
+  await screen.findByText('Đã lưu mã NHA_MOI.');
+  const body = JSON.parse(calls.find(c => c.url === '/api/admin/coupons' && c.method === 'POST').body);
+  expect(body).toMatchObject({ code: 'NHA_MOI', name: null, discountType: 'FIXED', discountValue: '150000.25', minimumOrderAmount: '0.00', maxDiscountAmount: null, totalUsageLimit: null, perUserLimit: null, isActive: false });
+  expect(new Date(body.startsAt).getHours()).toBe(10);
+});
+
+it('retains coupon input and exposes server field validation beside its field', async () => {
+  const { user } = mount('/admin/coupons', { 'PATCH /api/admin/coupons/5': { status: 400, body: { code: 'VALIDATION_ERROR', message: 'Kiểm tra thông tin ưu đãi.', fieldErrors: { discountValue: 'Phần trăm phải nhỏ hơn hoặc bằng 100.' } } } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Sửa NHA10' }));
+  const form = within(screen.getByRole('form', { name: 'Thông tin mã ưu đãi' }));
+  await user.clear(form.getByLabelText('Giá trị giảm (%)'));
+  await user.type(form.getByLabelText('Giá trị giảm (%)'), '101');
+  await user.click(form.getByRole('button', { name: 'Lưu thay đổi' }));
+  await screen.findByText('Phần trăm phải nhỏ hơn hoặc bằng 100.');
+  expect(form.getByLabelText('Giá trị giảm (%)')).toHaveValue('101');
+  expect(form.getByLabelText('Giá trị giảm (%)')).toHaveAttribute('aria-invalid', 'true');
+  expect(form.getByLabelText('Giá trị giảm (%)')).toHaveAccessibleDescription('Phần trăm phải nhỏ hơn hoặc bằng 100.');
+});
+
+it('deactivates with a partial PATCH instead of overwriting coupon fields', async () => {
+  const { user, calls } = mount('/admin/coupons', { 'PATCH /api/admin/coupons/5': { ...coupon, isActive: false } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Tắt NHA10' }));
+  await screen.findByText('Đã tắt mã NHA10.');
+  expect(JSON.parse(calls.find(c => c.method === 'PATCH').body)).toEqual({ isActive: false });
+});
+
+it('sends coupon search and pagination as bounded server queries', async () => {
+  const { user, calls } = mount('/admin/coupons', { 'GET /api/admin/coupons?query=&page=0&size=20': { ...page([coupon]), totalElements: 21, totalPages: 2 } }, staff);
+  await screen.findByText('NHA10');
+  await user.click(screen.getByRole('button', { name: 'Trang sau' }));
+  await waitFor(() => expect(calls.some(c => c.url === '/api/admin/coupons?query=&page=1&size=20')).toBe(true));
+  await user.type(screen.getByLabelText('Tìm mã ưu đãi'), 'NHA');
+  await user.click(screen.getByRole('button', { name: 'Tìm kiếm' }));
+  await waitFor(() => expect(calls.some(c => c.url === '/api/admin/coupons?query=NHA&page=0&size=20')).toBe(true));
+});

@@ -3,8 +3,10 @@
 ## Phạm vi chung
 
 - Thời hạn nhóm tự quản lý: 14 ngày. Tài liệu này phân công trách nhiệm, không chia lịch theo ngày.
-- Hoàn thiện website bán nội thất bằng Spring Boot, Thymeleaf, MariaDB `furniture_shop`; khai thác đủ 45 bảng nghiệp vụ đã thống nhất.
-- Đề xuất giữ một ứng dụng Spring Boot, tổ chức theo module nghiệp vụ. Mỗi người làm trọn Entity/Repository/Service/Controller, DTO/validation, giao diện khách/admin có liên quan, kiểm thử và tài liệu phần mình.
+- Frontend được người dùng chọn là **React**, thay cho Thymeleaf. Backend vẫn **Spring Boot REST API**, database MariaDB `furniture_shop`; khai thác đủ 45 bảng nghiệp vụ đã thống nhất.
+- Đề xuất dùng React + Vite trong thư mục `frontend/`, giữ Maven/backend tại vị trí hiện có và tổ chức Java theo module nghiệp vụ. Mỗi người làm trọn Entity/Repository/Service/REST Controller, DTO/validation, React component/page và phần gọi API của mình, kiểm thử và tài liệu.
+- React quản lý giao diện và route khách/admin; Spring Boot trả JSON, xử lý xác thực, phân quyền, validation, giá, transaction và dữ liệu. Trình duyệt không kết nối MariaDB hoặc Redis trực tiếp.
+- Phần TV3-01/02/03 đã có React, REST API, giỏ DB và quản trị coupon trong runtime commerce riêng. Các luồng khác vẫn cần chuyển đổi; không coi việc chỉ xóa dependency Thymeleaf là hoàn thành frontend/API.
 - Redis phục vụ cache dữ liệu đọc; MariaDB là nguồn dữ liệu quyết định về tiền, đơn và tồn kho. Không lấy giá/tồn từ cache để chốt đơn.
 - Tái sử dụng có chọn lọc code hiện có. Java entity hiện tại chưa tương thích schema mới; việc chuyển đổi nằm trong từng phần việc dưới đây.
 - Giao dịch trực tuyến tích hợp một cổng có sandbox thật. Demo cần phân biệt trạng thái sandbox với thu/hoàn tiền thật, không coi một nút giả lập là tích hợp thanh toán hoàn chỉnh.
@@ -15,16 +17,17 @@
 
 ### Công việc
 
-- Thiết lập cấu trúc package theo nghiệp vụ; các phần chung gồm cấu hình, response/lỗi, validation, phân trang, thời gian UTC, logging và giao diện layout chung cùng TV2.
+- Thiết lập cấu trúc package theo nghiệp vụ; các phần chung gồm cấu hình, JSON response/lỗi, DTO/validation, phân trang, thời gian UTC, logging. Dựng React/Vite, API client và layout dùng chung cùng TV2.
 - Kiểm tra tương thích Java/Spring Boot/Spring Security/Spring AI hiện có; chuẩn hóa profile local/test/deploy và quản lý secret bằng environment.
 - Tích hợp Flyway làm cơ chế migration duy nhất. Với database 45 bảng đã có, kiểm tra schema rồi baseline rõ ràng; với database trống, chạy migration tạo bảng. Không copy nguyên script có `CREATE DATABASE`/`USE` vào migration chạy trên datasource và không baseline tự động mọi database lạ.
 - Tài khoản: đăng ký, đăng nhập/đăng xuất, xem/sửa hồ sơ, đổi/quên mật khẩu, sổ địa chỉ và địa chỉ mặc định.
 - Quản trị tài khoản: tìm kiếm, khóa/mở, gán quyền ADMIN/STAFF/CUSTOMER; chặn tự leo thang quyền, truy cập dữ liệu của người khác.
-- Chọn và ghi rõ một cơ chế xác thực web phù hợp Thymeleaf; đề xuất Spring Security session cho web. Chỉ giữ JWT riêng khi có API client thực sự cần, tránh trộn hai cơ chế không rõ phạm vi.
+- Chọn và ghi rõ một cơ chế xác thực cho React SPA; đề xuất Spring Security session qua cookie HttpOnly khi triển khai cùng origin. Nếu chọn JWT thì phải thống nhất lưu trữ, hết hạn, đăng xuất và làm mới; React không bắt buộc phải dùng JWT. Không trộn hai cơ chế không rõ phạm vi.
+- Cấu hình React Router và API prefix `/api`, xử lý JSON 401/403 thay vì redirect HTML. Khi phát triển dùng Vite proxy cho API; khi triển khai dùng reverse proxy để phục vụ React và chuyển `/api` đến Spring Boot, có fallback route SPA. Nếu tách origin phải cấu hình CORS/credentials đúng; cookie authentication vẫn cần CSRF.
 - Bảo mật: hash mật khẩu, CSRF cho web, cookie an toàn, kiểm tra quyền ở service/controller, giới hạn đăng nhập, giới hạn upload, không lộ secret/log nhạy cảm. Endpoint webhook chỉ miễn CSRF đúng phạm vi cần thiết và xác minh riêng.
 - Audit: ghi người thao tác, đối tượng, hành động và thay đổi quan trọng; không log mật khẩu/token.
 - Cấu hình Redis/Spring Cache dùng chung, timeout và đường xử lý khi cache lỗi. Chủ module quyết định dữ liệu cache, key, TTL và xóa cache tương ứng.
-- Docker Compose cho app/MariaDB/Redis và SMTP sandbox; cấu hình HTTPS/reverse proxy ở môi trường triển khai, health check, log, CI build/test, quản lý file upload bằng volume hoặc object storage, backup/khôi phục DB.
+- Docker Compose cho backend/frontend/MariaDB/Redis và SMTP sandbox; cấu hình HTTPS/reverse proxy ở môi trường triển khai, health check, log, CI build/test cả Java và React, quản lý file upload bằng volume hoặc object storage, backup/khôi phục DB.
 - Khởi tạo tài khoản quản trị qua cơ chế được kiểm soát, không hardcode mật khẩu mặc định.
 
 ### Đầu ra nghiệm thu
@@ -43,7 +46,7 @@ Môi trường dựng được từ hướng dẫn; phân quyền đúng; hồ s
 - Trang khách: danh sách sản phẩm, trang danh mục/phòng/bộ sưu tập, chi tiết sản phẩm, chọn SKU và gallery.
 - Tìm kiếm từ khóa và bộ lọc giá, danh mục, màu, kích thước, chất liệu, không gian; sắp xếp và phân trang. Giá/tồn hiển thị theo SKU, lấy tồn qua API đọc của TV4.
 - Trang quản trị tương ứng, validation dữ liệu, trạng thái ngừng bán thay cho xóa SKU đã có lịch sử.
-- Chủ trì bộ giao diện dùng chung với TV1: typography, màu, form, card sản phẩm, breadcrumb, trạng thái loading/rỗng/lỗi, responsive mobile và keyboard accessibility cơ bản. Các thành viên còn lại dùng cùng bộ này cho màn hình của mình.
+- Chủ trì bộ React component dùng chung với TV1: typography, màu, form, card sản phẩm, breadcrumb, layout khách/admin, trạng thái loading/rỗng/lỗi, responsive mobile và keyboard accessibility cơ bản. Các thành viên còn lại dùng cùng bộ này cho màn hình của mình.
 - Cung cấp dữ liệu catalog/giá SKU cho TV3 và TV5 qua service/DTO đã thống nhất; phát thay đổi catalog để cache/vector được cập nhật sau commit.
 - Cache danh mục, không gian, thương hiệu, chi tiết catalog và truy vấn phổ biến có giới hạn; xóa cache sau cập nhật. Không đưa tồn quyết định mua vào cache catalog.
 - Tối ưu SQL bằng projection/fetch có chủ đích, index theo truy vấn thực, kiểm tra EXPLAIN, tránh N+1 và tải toàn bộ danh sách vào bộ nhớ.
@@ -122,7 +125,7 @@ Toàn bộ nội dung/tương tác chạy được; AI tư vấn đúng dữ li�
 - Phần khác gọi service/DTO công khai, không truy cập repository nội bộ. Các facade đọc có thể batch để tránh tạo N+1 giữa module.
 - Cần chốt contract cho catalog-price, inventory reserve/release/ship, order-read, payment-result, return-refund và cache/catalog-change. Những bước liên quan đơn/tiền/tồn có transaction và khóa rõ ràng.
 - Tác vụ nền quan trọng (email/reindex/yêu cầu hoàn tiền) cần trạng thái lưu bền, retry và chống lặp. Nếu chọn outbox, TV1 phụ trách nền và migration bảng kỹ thuật; chủ module phụ trách handler. Bảng token, outbox, Flyway history và vector là bảng kỹ thuật bổ sung, không nằm trong 45 bảng nghiệp vụ hiện có; tài liệu này chưa tạo chúng.
-- TV1 + TV2 thiết kế layout; ai làm chức năng thì làm luôn màn hình, validation, loading/rỗng/lỗi và phân quyền của chức năng đó. Không dồn toàn bộ frontend hoặc toàn bộ test cho một người.
+- TV1 + TV2 thiết kế React layout/component; ai làm chức năng thì làm luôn React page, API integration, validation hiển thị và loading/rỗng/lỗi. Route guard React phục vụ trải nghiệm; Spring Boot vẫn phải kiểm tra quyền độc lập. Không dồn toàn bộ frontend hoặc toàn bộ test cho một người.
 - Mỗi PR có kiểm thử nghiệp vụ phù hợp và được một người khác review. Tách branch theo chức năng; tích hợp thường xuyên, không chờ hoàn thành riêng rồi mới ghép.
 
 ## Cache và hiệu năng: trách nhiệm cụ thể
@@ -153,3 +156,5 @@ Toàn bộ nội dung/tương tác chạy được; AI tư vấn đúng dữ li�
 - Migration: [Spring Boot database initialization](https://docs.spring.io/spring-boot/how-to/data-initialization.html).
 - Cache: [Spring Data Redis Cache](https://docs.spring.io/spring-data/redis/reference/redis/redis-cache.html).
 - Quan sát hiệu năng: [Spring Boot Actuator metrics](https://docs.spring.io/spring-boot/reference/actuator/metrics.html).
+- React/Vite: [Build a React app from scratch](https://react.dev/learn/build-a-react-app-from-scratch).
+- Bảo vệ cookie authentication trong SPA: [Spring Security CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html).
