@@ -76,4 +76,3 @@ class InventoryReservationTest extends CheckoutAdapterFixture {
         catch(CommerceException error) {return error.getCode();}
     }
 }
-
