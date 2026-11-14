@@ -4,6 +4,13 @@ import { createApiClient } from './apiClient';
 const response = (body, status = 200) => new Response(body == null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 describe('session and CSRF boundary', () => {
+  it('sends order idempotency headers and exposes the new quote from a conflict response', async () => {
+    const calls = [];
+    const api = createApiClient(async (url, options) => { calls.push({ url, ...options }); return url === '/api/csrf' ? response({ token: 't', headerName: 'X-CSRF-TOKEN' }) : response({ code: 'QUOTE_CHANGED', message: 'Giá đổi', fieldErrors: {}, quote: { quoteFingerprint: 'v2', grandTotal: '100.00' } }, 409); });
+    await expect(api.request('/checkout/orders', { method: 'POST', headers: { 'Idempotency-Key': 'order-attempt-1' }, body: { quoteFingerprint: 'v1' } })).rejects.toMatchObject({ code: 'QUOTE_CHANGED', quote: { quoteFingerprint: 'v2', grandTotal: '100.00' } });
+    expect(calls[1].headers['Idempotency-Key']).toBe('order-attempt-1');
+    expect(calls[1].headers['X-CSRF-TOKEN']).toBe('t');
+  });
   it('uses the renewed CSRF token for the explicit post-login cart merge and refreshes again after logout', async () => {
     const calls = [];
     let token = 'guest-token';

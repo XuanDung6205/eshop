@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCommerce } from '../../lib/session';
 import { ErrorNotice, Icon } from '../../components/ui';
 
@@ -10,8 +10,11 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const requested = location.state?.returnTo;
+  const returnTo = typeof requested === 'string' && /^\/(?:checkout|orders(?:\/\d+)?)(?:\?.*)?$/.test(requested) ? requested : '/cart';
   async function merge() {
-    try { await api.mergeCart(); navigate('/cart'); }
+    try { await api.mergeCart(); navigate(returnTo); }
     catch (value) { setMergeError(value); }
   }
   async function submit(event) {

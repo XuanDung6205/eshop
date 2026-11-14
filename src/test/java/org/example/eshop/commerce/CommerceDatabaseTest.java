@@ -52,7 +52,7 @@ class CommerceDatabaseTest {
 
     @BeforeEach void reset() {
         assertTrue(jdbc.queryForObject("SELECT DATABASE()",String.class).startsWith("furniture_shop_test_"));
-        for(String table:List.of("coupon_redemptions","order_status_history","order_addresses","orders","cart_items","carts","coupons","inventory_balances","product_images","product_variants","products","categories","user_roles","users")) jdbc.update("DELETE FROM "+table);
+        for(String table:List.of("refunds","payment_events","payments","shipment_items","shipments","inventory_movements","inventory_reservations","coupon_redemptions","order_status_history","order_addresses","order_items","orders","cart_items","carts","coupons","user_addresses","inventory_balances","product_images","variant_materials","product_variants","products","categories","user_roles","users")) jdbc.update("DELETE FROM "+table);
         String hash=new BCryptPasswordEncoder().encode("test-password");
         for(var a:List.of(admin,customer,other)) {
             jdbc.update("INSERT INTO users(id,username,email,password_hash,full_name) VALUES(?,?,?,?,?)",a.getUserId(),a.getUsername(),a.getUsername()+"@example.invalid",hash,a.getUsername());

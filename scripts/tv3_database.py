@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action",choices=["create","seed"])
+    parser.add_argument("action",choices=["create","seed","migrate"])
     parser.add_argument("--database",required=True)
     parser.add_argument("--client",default=r"C:\Program Files\MariaDB 12.2\bin\mariadb.exe")
     args=parser.parse_args()
@@ -33,12 +33,17 @@ def main():
             codes=re.findall(r"ERROR \d+[^\n]*",result.stderr)
             raise RuntimeError("; ".join(codes) or "MariaDB command failed; check connectivity and schema.")
         return result.stdout.strip()
+    if args.action=="migrate":
+        sql((ROOT/"docs/database/V002__orders_request_fingerprint.sql").read_text(encoding="utf-8"),args.database)
+        print("Applied additive V002 fingerprint migration to isolated DB "+args.database+".")
+        return
     if args.action=="create":
         bootstrap=(ROOT/"docs/database/V001__create_furniture_shop.sql").read_text(encoding="utf-8")
         assert bootstrap.count("CREATE DATABASE furniture_shop ")==1 and bootstrap.count("USE furniture_shop;")==1
         bootstrap=bootstrap.replace("CREATE DATABASE furniture_shop ",f"CREATE DATABASE {args.database} ").replace("USE furniture_shop;",f"USE {args.database};")
         sql(bootstrap)
-        print("Created "+args.database+" with the approved 45-table schema. Existing DBs were not overwritten.")
+        sql((ROOT/"docs/database/V002__orders_request_fingerprint.sql").read_text(encoding="utf-8"),args.database)
+        print("Created "+args.database+" with approved 45-table schema and V002 migration. Existing DBs were not overwritten.")
         return
     if len(os.environ.get("TV3_DEMO_PASSWORD",""))<10:
         parser.error("Supply TV3_DEMO_PASSWORD with at least 10 characters; it is not printed.")

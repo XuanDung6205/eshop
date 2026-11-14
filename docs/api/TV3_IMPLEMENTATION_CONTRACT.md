@@ -1,5 +1,7 @@
 # TV3-01/02/03 implementation contract
 
+Follow-up TV3-04/05/06: [checkout/customer order contract](TV3_CHECKOUT_CONTRACT.md). The restrictions below describe the original first-three-task scope; checkout now has separate authenticated routes and transactional inventory writers through InventoryPort.
+
 This is the concrete local integration contract for the approved first three tasks. Adjacent team modules have not been delivered yet; JDBC adapters read their existing MariaDB tables without rewriting their entities or writing their data. These adapters are replaceable implementations of the ports below, not mock data. No claim of teammate sign-off is made.
 
 ## Runtime boundary
