@@ -229,7 +229,6 @@ public class ProductRecommendationService {
                 }
             }
         }
-
         return recommendations;
     }
 
