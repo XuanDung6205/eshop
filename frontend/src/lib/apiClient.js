@@ -4,14 +4,15 @@ export class ApiError extends Error {
     this.status = status;
     this.code = data?.code;
     this.fieldErrors = data?.fieldErrors || {};
+    this.quote = data?.quote;
   }
 }
 
 export function createApiClient(fetcher = (...args) => fetch(...args)) {
   let csrf;
   let csrfPromise;
-  async function request(path, { method = 'GET', body, signal, form = false } = {}) {
-    const headers = { Accept: 'application/json' };
+  async function request(path, { method = 'GET', body, signal, form = false, headers: extraHeaders = {} } = {}) {
+    const headers = { Accept: 'application/json', ...extraHeaders };
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       const token = csrf || await refreshCsrf();
       headers[token.headerName] = token.token;

@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: TV3 Furniture Commerce API
-  version: 1.0.0
-  description: Implemented scope TV3-01/02/03 only. Session/CSRF, DB cart, read-only catalog bridge, coupon administration/calculation.
-    Orders/payment/checkout are not implemented.
+  version: 1.1.0
+  description: 'Implemented TV3-01–06: session/CSRF, DB cart, catalog bridge, coupons, server checkout quotes, transactional
+    idempotent orders, customer history/cancellation. Payment verification/gateway/refund execution are tasks08–10; checkout
+    creates PENDING payments and paid cancellation queues PENDING refund requests.'
 servers:
 - url: http://localhost:8080
   description: Local Spring Boot commerce runtime
@@ -12,6 +13,8 @@ tags:
 - name: Cart
 - name: Catalog
 - name: Coupons
+- name: Checkout
+- name: Orders
 paths:
   /api/csrf:
     get:
@@ -412,8 +415,7 @@ paths:
         '403': *id003
         '404': *id004
         '409': *id005
-      description: Nullable fields can explicitly be cleared with null. Referenced coupon code cannot be renamed;
-        use isActive=false.
+      description: Nullable fields can explicitly be cleared with null. Referenced coupon code cannot be renamed; use isActive=false.
       parameters:
       - *id006
       - *id007
@@ -462,8 +464,8 @@ paths:
         '403': *id003
         '404': *id004
         '409': *id005
-      description: Checks active/date/minimum/value/cap. Does not reserve usage or prove checkout eligibility; usage
-        concurrency is TV3-05.
+      description: Checks active/date/minimum/value/cap. Does not reserve usage or prove checkout eligibility; usage concurrency
+        is TV3-05.
       parameters:
       - *id006
       - *id007
@@ -487,6 +489,350 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RuntimeInfo'
+  /api/checkout/addresses:
+    get:
+      operationId: getCheckoutAddresses
+      tags:
+      - Checkout
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutAddressList'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /api/checkout/quote:
+    post:
+      operationId: quoteCheckout
+      tags:
+      - Checkout
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutQuote'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      parameters:
+      - in: header
+        name: X-CSRF-TOKEN
+        required: true
+        schema: &id009
+          type: string
+        description: Fetch from /api/csrf; refresh after login/logout.
+  /api/checkout/orders:
+    post:
+      operationId: placeCheckoutOrder
+      tags:
+      - Checkout
+      security:
+      - cookieSession: []
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrder'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/ApiError'
+                - $ref: '#/components/schemas/QuoteChanged'
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,64}$
+        description: User-scoped. Retry with identical body/key, including after network uncertainty.
+      - in: header
+        name: X-CSRF-TOKEN
+        required: true
+        schema: *id009
+        description: Fetch from /api/csrf; refresh after login/logout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+  /api/orders:
+    get:
+      operationId: listCustomerOrders
+      tags:
+      - Orders
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrderPage'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - in: query
+        name: size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ''
+          - PENDING_CONFIRMATION
+          - CONFIRMED
+          - PROCESSING
+          - COMPLETED
+          - CANCELLED
+  /api/orders/{id}:
+    get:
+      operationId: getCustomerOrder
+      tags:
+      - Orders
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrder'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+      - &id010
+        in: path
+        name: id
+        required: true
+        schema: &id025
+          type: integer
+          format: int64
+  /api/orders/{id}/cancel:
+    post:
+      operationId: cancelCustomerOrder
+      tags:
+      - Orders
+      security:
+      - cookieSession: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrder'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: CSRF invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Owned resource missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: State/stock/coupon/idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+      - *id010
+      - in: header
+        name: X-CSRF-TOKEN
+        required: true
+        schema: *id009
+        description: Fetch from /api/csrf; refresh after login/logout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
 components:
   securitySchemes:
     cookieSession:
@@ -595,7 +941,7 @@ components:
           type: integer
           minimum: 1
           maximum: 1000000
-        unitPrice: &id009
+        unitPrice: &id011
           type: string
           pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
           example: '12900000.00'
@@ -699,7 +1045,7 @@ components:
           type: string
         variantName:
           type: string
-        price: *id009
+        price: *id011
         imageUrl:
           type: string
           nullable: true
@@ -710,55 +1056,55 @@ components:
           minimum: 0
     CouponInput:
       type: object
-      properties: &id010
-        code: &id011
+      properties: &id012
+        code: &id013
           type: string
           maxLength: 50
           description: Trimmed and canonicalized to uppercase; A-Z0-9_- only.
-        name: &id012
+        name: &id014
           type: string
           maxLength: 150
           nullable: true
-        discountType: &id013
+        discountType: &id015
           type: string
           enum:
           - PERCENT
           - FIXED
-        discountValue: &id014
+        discountValue: &id016
           type: string
           pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
           example: '12900000.00'
           description: Positive; percentage must not exceed 100.
-        maxDiscountAmount: &id015
+        maxDiscountAmount: &id017
           type: string
           pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
           example: '12900000.00'
           description: Positive or null.
           nullable: true
-        minimumOrderAmount: &id016
+        minimumOrderAmount: &id018
           type: string
           pattern: ^(0|[1-9][0-9]{0,12})(\.[0-9]{1,2})?$
           example: '12900000.00'
           description: Exact decimal amount; client must not calculate checkout totals.
           default: '0.00'
-        totalUsageLimit: &id017
+        totalUsageLimit: &id019
           type: integer
           minimum: 1
           nullable: true
-        perUserLimit: &id018
+        perUserLimit: &id020
           type: integer
           minimum: 1
           nullable: true
-        startsAt: &id019
+        startsAt: &id021
           type: string
           format: date-time
           example: '2026-11-13T10:00:00Z'
-        endsAt: &id020
+        endsAt: &id022
           type: string
           format: date-time
           example: '2026-11-13T10:00:00Z'
           description: Must be after startsAt.
-        isActive: &id021
+        isActive: &id023
           type: boolean
           default: true
       required:
@@ -771,14 +1117,14 @@ components:
     CouponPreviewInput:
       type: object
       properties:
-        merchandiseAmount: *id009
+        merchandiseAmount: *id011
       required:
       - merchandiseAmount
     CouponPreview:
       type: object
       properties:
-        discountAmount: *id009
-        remainingAmount: *id009
+        discountAmount: *id011
+        remainingAmount: *id011
         currency:
           type: string
           enum:
@@ -789,7 +1135,7 @@ components:
       - currency
     CouponPatch:
       type: object
-      properties: *id010
+      properties: *id012
       minProperties: 1
       additionalProperties: false
     Coupon:
@@ -798,19 +1144,19 @@ components:
         id:
           type: integer
           format: int64
-        code: *id011
-        name: *id012
-        discountType: *id013
-        discountValue: *id014
-        maxDiscountAmount: *id015
-        minimumOrderAmount: *id016
-        totalUsageLimit: *id017
-        perUserLimit: *id018
-        startsAt: *id019
-        endsAt: *id020
-        isActive: *id021
-        createdAt: *id019
-        updatedAt: *id019
+        code: *id013
+        name: *id014
+        discountType: *id015
+        discountValue: *id016
+        maxDiscountAmount: *id017
+        minimumOrderAmount: *id018
+        totalUsageLimit: *id019
+        perUserLimit: *id020
+        startsAt: *id021
+        endsAt: *id022
+        isActive: *id023
+        createdAt: *id021
+        updatedAt: *id021
       required:
       - id
       - code
@@ -893,3 +1239,268 @@ components:
         isolatedData:
           type: boolean
           description: True only for explicitly named TV3 demo/test schemas. No database name or credential is exposed.
+    CheckoutAddress:
+      type: object
+      properties:
+        label: &id024
+          type: string
+          nullable: true
+        email: *id024
+        addressLine2: *id024
+        wardName: *id024
+        districtName: *id024
+        postalCode: *id024
+        companyName: *id024
+        taxCode: *id024
+        recipientName: *id009
+        phone: *id009
+        addressLine1: *id009
+        provinceName: *id009
+        countryCode:
+          type: string
+          enum:
+          - VN
+        id:
+          type: integer
+          format: int64
+          nullable: true
+      required:
+      - recipientName
+      - phone
+      - addressLine1
+      - provinceName
+    CheckoutRequest:
+      type: object
+      properties:
+        cartId: *id025
+        addressId:
+          type: integer
+          format: int64
+          nullable: true
+        shippingAddress:
+          $ref: '#/components/schemas/CheckoutAddress'
+          nullable: true
+        couponCode: *id024
+        paymentMethod:
+          type: string
+          enum:
+          - COD
+          - BANK_TRANSFER
+        assemblyRequested: &id026
+          type: boolean
+        customerNote:
+          type: string
+          nullable: true
+          maxLength: 2000
+      required:
+      - cartId
+      - paymentMethod
+      description: Exactly one of addressId (owned saved address) or shippingAddress (inline snapshot). No client prices accepted
+        as authority.
+    PlaceOrderRequest:
+      allOf:
+      - $ref: '#/components/schemas/CheckoutRequest'
+      - type: object
+        properties:
+          quoteFingerprint:
+            type: string
+            pattern: ^[a-f0-9]{64}$
+        required:
+        - quoteFingerprint
+    CheckoutLine:
+      type: object
+      properties:
+        sku: *id009
+        productName: *id009
+        variantName: *id009
+        variantId: *id025
+        productId: *id025
+        quantity: *id025
+        warrantyMonths: *id025
+        availableQuantity: *id025
+        imageUrl: *id024
+        colorName: *id024
+        dimensionsSnapshot: *id024
+        materialsSnapshot: *id024
+        assemblyRequired: *id026
+        unitPrice: &id027
+          type: string
+          pattern: ^\d+\.\d{2}$
+          example: '50000.00'
+        lineTotal: *id027
+    CheckoutQuote:
+      type: object
+      properties:
+        cartId: *id025
+        quoteFingerprint: *id009
+        currency:
+          type: string
+          enum:
+          - VND
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckoutLine'
+        shippingAddress:
+          $ref: '#/components/schemas/CheckoutAddress'
+        subtotal: *id027
+        discountAmount: *id027
+        shippingFee: *id027
+        assemblyFee: *id027
+        taxAmount: *id027
+        grandTotal: *id027
+        couponCode: *id024
+        paymentMethod: *id009
+        assemblyRequested: *id026
+        warnings:
+          type: array
+          items: *id009
+    QuoteChanged:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+          - QUOTE_CHANGED
+        message: *id009
+        quote:
+          $ref: '#/components/schemas/CheckoutQuote'
+    OrderLine:
+      type: object
+      properties:
+        sku: *id009
+        productName: *id009
+        variantName: *id009
+        variantId: *id025
+        productId: *id025
+        quantity: *id025
+        warrantyMonths: *id025
+        imageUrl: *id024
+        colorName: *id024
+        dimensionsSnapshot: *id024
+        materialsSnapshot: *id024
+        assemblyRequired: *id026
+        unitPrice: *id027
+        lineTotal: *id027
+        id: *id025
+        discountAmount: *id027
+    OrderPayment:
+      type: object
+      properties:
+        id: *id025
+        method: *id009
+        status: *id009
+        amount: *id027
+        currency: *id009
+        paidAt:
+          type: string
+          nullable: true
+          format: date-time
+    OrderShipment:
+      type: object
+      properties:
+        id: *id025
+        status: *id009
+        trackingNumber: *id024
+        carrier: *id024
+    OrderHistory:
+      type: object
+      properties:
+        fromStatus: *id024
+        toStatus: *id009
+        note: *id024
+        changedAt:
+          type: string
+          format: date-time
+    OrderRefund:
+      type: object
+      properties:
+        id: *id025
+        paymentId: *id025
+        status: *id009
+        amount: *id027
+        currency: *id009
+        reason: *id009
+    CustomerOrder:
+      type: object
+      properties:
+        id: *id025
+        orderNumber: *id009
+        status: *id009
+        currency: *id009
+        grandTotal: *id027
+        placedAt: &id028
+          type: string
+          format: date-time
+        subtotal: *id027
+        discountAmount: *id027
+        shippingFee: *id027
+        assemblyFee: *id027
+        taxAmount: *id027
+        couponCode: *id024
+        customerNote: *id024
+        cancelledAt: *id024
+        cancelReason: *id024
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+        shippingAddress:
+          $ref: '#/components/schemas/CheckoutAddress'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderPayment'
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderShipment'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderHistory'
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderRefund'
+        canCancel: *id026
+        cancellationMessage: *id009
+    CustomerOrderSummary:
+      type: object
+      properties:
+        id: *id025
+        orderNumber: *id009
+        status: *id009
+        currency: *id009
+        grandTotal: *id027
+        placedAt: *id028
+        itemCount: *id025
+        paymentStatus: *id009
+        shipmentStatus: *id009
+    CustomerOrderPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerOrderSummary'
+        page: *id025
+        size: *id025
+        totalElements: *id025
+        totalPages: *id025
+    CheckoutAddressList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckoutAddress'
+    CancelOrderRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
