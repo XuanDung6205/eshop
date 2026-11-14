@@ -19,6 +19,7 @@ import java.util.*;
 
 @Service
 public class CheckoutQuoteService {
+    private static final BigDecimal MAX_MONEY=new BigDecimal("9999999999999.99");
     private final JdbcTemplate db;
     private final CurrentActorPort actors;
     private final CheckoutCatalogPort catalog;
@@ -39,7 +40,8 @@ public class CheckoutQuoteService {
         this.coupons=coupons;this.calculator=calculator;this.mapper=mapper;this.clock=clock;
         this.shipping=moneyConfig(shipping);this.freeThreshold=moneyConfig(freeThreshold);this.assembly=moneyConfig(assembly);
     }
-    private static BigDecimal moneyConfig(BigDecimal v){if(v.signum()<0||v.scale()>2)throw new IllegalArgumentException("Checkout fees must be nonnegative with <=2 decimals");return v.setScale(2);}
+    private static BigDecimal moneyConfig(BigDecimal v){if(v.signum()<0||v.scale()>2||v.compareTo(MAX_MONEY)>0)throw new IllegalArgumentException("Checkout fees must fit nonnegative DECIMAL(15,2)");return v.setScale(2);}
+    private static void storable(BigDecimal v){if(v.signum()<0||v.compareTo(MAX_MONEY)>0)throw CommerceException.conflict("ORDER_AMOUNT_TOO_LARGE","Khoản tiền vượt giới hạn, vui lòng chia nhỏ giỏ hàng.");}
     public long actorId(){var id=actors.currentActor().userId();if(id==null)throw CommerceException.forbidden("Bạn cần đăng nhập để đặt hàng.");return id;}
     public void validate(CheckoutRequest r) {
         var errors=new LinkedHashMap<String,String>();
@@ -83,7 +85,7 @@ public class CheckoutQuoteService {
         for(var l:cartLines){
             var p=products.get(l.variantId());if(p==null||!p.active())throw CommerceException.conflict("SKU_UNAVAILABLE","Sản phẩm trong giỏ đã ngừng bán.");
             int available=quantities.getOrDefault(l.variantId(),0);if(l.quantity()>available)throw CommerceException.conflict("STOCK_UNAVAILABLE","Sản phẩm "+p.sku()+" không đủ tồn kho. Hãy cập nhật giỏ hàng.");
-            var total=p.unitPrice().multiply(BigDecimal.valueOf(l.quantity())).setScale(2,RoundingMode.HALF_UP);subtotal=subtotal.add(total);
+            var total=p.unitPrice().multiply(BigDecimal.valueOf(l.quantity())).setScale(2,RoundingMode.HALF_UP);storable(total);subtotal=subtotal.add(total);
             if(Boolean.TRUE.equals(r.assemblyRequested())&&p.assemblyRequired())assemblyTotal=assemblyTotal.add(assembly.multiply(BigDecimal.valueOf(l.quantity())));
             lines.add(new CheckoutQuote.Line(p.variantId(),p.productId(),p.sku(),p.productName(),p.variantName(),p.imageUrl(),p.colorName(),p.dimensionsSnapshot(),p.materialsSnapshot(),p.warrantyMonths(),p.assemblyRequired(),l.quantity(),amount(p.unitPrice()),amount(total),available));
             fingerprintItems.add(List.of(p,l.quantity()));
@@ -102,7 +104,7 @@ public class CheckoutQuoteService {
         }
         BigDecimal shippingTotal=subtotal.compareTo(freeThreshold)>=0?BigDecimal.ZERO:shipping;
         BigDecimal grand=subtotal.subtract(discount).add(shippingTotal).add(assemblyTotal);
-        if(grand.compareTo(new BigDecimal("9999999999999.99"))>0)throw CommerceException.conflict("ORDER_AMOUNT_TOO_LARGE","Tổng đơn vượt giới hạn, vui lòng chia nhỏ giỏ hàng.");
+        for(var amount:List.of(subtotal,discount,shippingTotal,assemblyTotal,grand))storable(amount);
         String fp=hash(List.of(userId,r.cartId(),address,fingerprintItems,amount(subtotal),amount(discount),amount(shippingTotal),amount(assemblyTotal),Objects.toString(code,""),r.paymentMethod(),Boolean.TRUE.equals(r.assemblyRequested()),Objects.toString(clean(r.customerNote()),"")));
         return new Calculation(new CheckoutQuote(r.cartId(),fp,"VND",List.copyOf(lines),address,amount(subtotal),amount(discount),amount(shippingTotal),amount(assemblyTotal),"0.00",amount(grand),code,r.paymentMethod(),Boolean.TRUE.equals(r.assemblyRequested()),List.of()),couponId);
     }

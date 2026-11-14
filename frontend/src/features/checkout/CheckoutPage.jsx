@@ -6,6 +6,9 @@ import { AddressSnapshot, MoneyBreakdown, OrderItems, OrderNote, paymentMethods 
 import { checkoutApi, clearAttempt, readAttempt, saveAttempt } from './checkoutApi';
 
 const emptyAddress = () => ({ recipientName: '', phone: '', email: '', addressLine1: '', addressLine2: '', wardName: '', districtName: '', provinceName: '', postalCode: '', countryCode: 'VN', companyName: '', taxCode: '' });
+// These typed business failures are emitted only after the server checked the
+// original key inside its transaction. Middleware errors cannot resolve it.
+const uncommittedCodes = new Set(['CART_UNAVAILABLE', 'EMPTY_CART', 'SKU_UNAVAILABLE', 'STOCK_UNAVAILABLE', 'COUPON_UNAVAILABLE', 'COUPON_MINIMUM_NOT_MET', 'COUPON_LIMIT_REACHED', 'ORDER_AMOUNT_TOO_LARGE', 'NOT_FOUND']);
 export default function CheckoutPage() {
   const { api, session } = useCommerce();
   const userId = session.user.id;
@@ -75,11 +78,19 @@ export default function CheckoutPage() {
       setError(value); setAccepted(false);
       if (value.code === 'QUOTE_CHANGED' && value.quote) {
         clearAttempt(userId); setPending(null); setQuote(value.quote); setChanged(true);
+        restoreRequest(attempt.body);
         const { quoteFingerprint, ...body } = attempt.body; setQuotedRequest(body);
-      } else if (value.status >= 400 && value.status < 500 && value.status !== 408 && value.code !== 'IDEMPOTENCY_CONFLICT') {
+      } else if ([404, 409].includes(value.status) && uncommittedCodes.has(value.code)) {
+        restoreRequest(attempt.body);
+        setQuote(null); setQuotedRequest(null); setChanged(false);
         clearAttempt(userId); setPending(null);
       }
     } finally { setBusy(false); placing.current = false; }
+  }
+  function restoreRequest(body) {
+    setAddressMode(body.addressId != null ? 'saved' : 'manual'); setAddressId(body.addressId == null ? '' : String(body.addressId));
+    setAddress(Object.fromEntries(Object.entries({ ...emptyAddress(), ...body.shippingAddress }).map(([key, value]) => [key, value ?? ''])));
+    setCoupon(body.couponCode ?? ''); setNote(body.customerNote ?? ''); setPayment(body.paymentMethod); setAssembly(!!body.assemblyRequested);
   }
   return <>
     <div className="breadcrumb"><Link to="/cart">Giỏ hàng</Link><span>/</span><span>Đặt hàng</span></div>

@@ -44,7 +44,7 @@ Build nằm trong `dist/`. Khi triển khai cần cùng origin, reverse proxy `/
 ## Bằng chứng kiểm thử frontend
 
 - RED trước implementation: 13 test fail (thiếu màn hình, session/CSRF client, định dạng tiền và UTC).
-- GREEN: `npm test` chạy 32 test/4 file. Ngoài 19 test TV3-01/02/03, đã chạy RED 10 test checkout/đơn trước implementation rồi GREEN: auth guard, địa chỉ đã lưu/nhập mới, báo giá server, xác nhận đặt, retry cùng body/khóa sau refresh, đổi báo giá, lỗi theo trường, phân trang/lọc đơn, snapshot/trạng thái độc lập và lý do hủy. Bổ sung hồi quy cho thông tin yêu cầu chờ sau reload và nhãn hoàn tiền khác thanh toán. Các hồi quy cũng đã thấy RED trước khi sửa.
+- GREEN: `npm test` chạy 37 test/4 file. Ngoài 19 test TV3-01/02/03, đã chạy RED 10 test checkout/đơn trước implementation rồi GREEN: auth guard, địa chỉ đã lưu/nhập mới, báo giá server, xác nhận đặt, retry cùng body/khóa sau refresh, đổi báo giá, lỗi theo trường, phân trang/lọc đơn, snapshot/trạng thái độc lập và lý do hủy. Bổ sung hồi quy cho thông tin yêu cầu chờ sau reload và nhãn hoàn tiền khác thanh toán. Các hồi quy cũng đã thấy RED trước khi sửa.
 - `npm run build`: pass. `npm audit`: 0 lỗ hổng sau khi ghim phiên bản đã vá.
 - Component test chỉ thay thế biên HTTP; không chứng minh transaction, quyền sở hữu hoặc MariaDB. Trên môi trường Windows Codex này Vitest cần chạy ngoài sandbox do sandbox chặn rename tệp tạm (`EPERM`).
 - Smoke qua proxy Vite thật tới Java/MariaDB cô lập `furniture_shop_tv3_dev`: `/api/session` trả guest, `/api/cart` trả giỏ rỗng/VND và catalog trả 3 SKU đã seed, giá có kiểu chuỗi. Chỉ kiểm tra đọc qua HTTP, không thay thế E2E browser.
@@ -52,3 +52,5 @@ Build nằm trong `dist/`. Khi triển khai cần cùng origin, reverse proxy `/
 - E2E chỉ chạy mutation sau khi `/api/commerce/runtime` xác nhận DB cô lập. Cần đặt `TV3_DEMO_PASSWORD` qua environment và khởi chạy backend/Vite trước; tài khoản checkout mặc định `tv3.customer`, đổi qua `TV3_CHECKOUT_USER` nếu cần. Test không tự sinh người dùng, không dùng DB production. Retry mạng/đổi quote được kiểm ở component HTTP boundary; E2E không mô phỏng mất phản hồi. Gateway, xác minh khoản thu và thực thi hoàn tiền thuộc task sau.
 
 Tài liệu thư viện đã đối chiếu: [Vite](https://vite.dev/guide/), [React Router](https://reactrouter.com/start/declarative/installation), [Vitest](https://vitest.dev/guide/) và metadata/audit từ npm registry chính thức. Các phiên bản đã khóa trong `package-lock.json`.
+
+Review regressions: giữ nguyên request/key khi mất phản hồi rồi gặp401/403/429, đăng nhập lại vẫn replay cùng đơn; lỗi nghiệp vụ xác nhận chưa tạo đơn phục hồi form gốc để sửa và xem báo giá mới.

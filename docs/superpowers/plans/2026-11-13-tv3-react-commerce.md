@@ -84,10 +84,10 @@
 
 **API đề xuất:** `POST /api/checkout/quote`.
 
-- [ ] Test `CheckoutQuoteServiceTest`: giỏ rỗng, SKU ngừng bán, thiếu hàng, địa chỉ không thuộc người mua, coupon không hợp lệ, phí do server tính và làm tròn nhất quán.
-- [ ] API trả các dòng, subtotal/giảm/phí/thuế/grandTotal, cảnh báo và dấu vết phiên bản/băm dữ liệu xem trước. Client không gửi giá hoặc tổng tiền có quyền quyết định.
-- [ ] React: chọn địa chỉ/nhập thông tin nhận hàng hợp lệ, ghi chú, mã giảm và phương thức thanh toán; hiển thị từng khoản tiền và lỗi theo trường.
-- [ ] Nghiệm thu: xem trước chưa tạo đơn/chưa giữ coupon/chưa giữ hàng. Quote không phải cam kết giữ giá hoặc tồn; thay đổi phải được kiểm tra lại khi đặt.
+- [x] Test `CheckoutQuoteServiceTest`: giỏ rỗng, SKU ngừng bán, thiếu hàng, địa chỉ không thuộc người mua, coupon không hợp lệ, phí do server tính và làm tròn nhất quán.
+- [x] API trả các dòng, subtotal/giảm/phí/thuế/grandTotal, cảnh báo và dấu vết phiên bản/băm dữ liệu xem trước. Client không gửi giá hoặc tổng tiền có quyền quyết định.
+- [x] React: chọn địa chỉ/nhập thông tin nhận hàng hợp lệ, ghi chú, mã giảm và phương thức thanh toán; hiển thị từng khoản tiền và lỗi theo trường.
+- [x] Nghiệm thu: xem trước chưa tạo đơn/chưa giữ coupon/chưa giữ hàng. Quote không phải cam kết giữ giá hoặc tồn; thay đổi phải được kiểm tra lại khi đặt.
 
 ## TV3-05 — Tạo đơn thật, snapshot và chống gửi trùng
 
@@ -97,13 +97,13 @@
 
 **API đề xuất:** `POST /api/checkout/orders` với `Idempotency-Key`.
 
-- [ ] Test `CheckoutTransactionIT`: rollback cả đơn/lượt mã/giữ hàng khi một SKU thất bại; cùng khóa/cùng request trả cùng đơn; không lộ đơn của tài khoản khác; cùng khóa/khác nội dung trả 409.
-- [ ] Tính lại từ DB và so với dữ liệu xem trước; nếu thay đổi giá/phí/coupon thì 409 kèm dữ liệu mới để khách xác nhận. Lưu snapshot đầy đủ, tiền đúng công thức và lịch sử ban đầu.
-- [ ] Dùng khóa/cập nhật có điều kiện cho lượt coupon và kho; giữ hàng qua InventoryPort trong cùng transaction, không ghi bảng kho trực tiếp. Chốt TTL/điểm APPLIED của coupon và release với TV4, thống nhất COD và online.
-- [ ] Lưu dấu vết request để chống tái sử dụng key cho nội dung khác. Nếu cần thêm cột request fingerprint vào orders, viết migration mới phối hợp TV1; không sửa bootstrap đã áp dụng.
-- [ ] Chuyển đúng giỏ sang CONVERTED và tạo giỏ mới khi cần; không xóa giỏ mới phát sinh của khách khi retry đơn cũ. Không gọi mạng/provider khi đang giữ transaction khóa hàng.
-- [ ] React: đặt hàng một lần, retry giữ nguyên key, xử lý xung đột và điều hướng đến đơn/luồng thanh toán. Disable nút chỉ là UX.
-- [ ] Nghiệm thu: tạo đơn thực tế, coupon và tồn đối chiếu được; COD vẫn là payment PENDING cho tới lúc thu tiền, không tự ghi PAID.
+- [x] Test `CheckoutTransactionIT`: rollback cả đơn/lượt mã/giữ hàng khi một SKU thất bại; cùng khóa/cùng request trả cùng đơn; không lộ đơn của tài khoản khác; cùng khóa/khác nội dung trả 409.
+- [x] Tính lại từ DB và so với dữ liệu xem trước; nếu thay đổi giá/phí/coupon thì 409 kèm dữ liệu mới để khách xác nhận. Lưu snapshot đầy đủ, tiền đúng công thức và lịch sử ban đầu.
+- [x] Dùng khóa/cập nhật có điều kiện cho lượt coupon và kho; giữ hàng qua InventoryPort trong cùng transaction, không ghi bảng kho trực tiếp. Chốt TTL/điểm APPLIED của coupon và release với TV4, thống nhất COD và online.
+- [x] Lưu dấu vết request để chống tái sử dụng key cho nội dung khác. Nếu cần thêm cột request fingerprint vào orders, viết migration mới phối hợp TV1; không sửa bootstrap đã áp dụng.
+- [x] Chuyển đúng giỏ sang CONVERTED và tạo giỏ mới khi cần; không xóa giỏ mới phát sinh của khách khi retry đơn cũ. Không gọi mạng/provider khi đang giữ transaction khóa hàng.
+- [x] React: đặt hàng một lần, retry giữ nguyên key, xử lý xung đột và điều hướng đến đơn/luồng thanh toán. Disable nút chỉ là UX.
+- [x] Nghiệm thu: tạo đơn thực tế, coupon và tồn đối chiếu được; COD vẫn là payment PENDING cho tới lúc thu tiền, không tự ghi PAID.
 
 ## TV3-06 — Đơn của khách và yêu cầu hủy
 
@@ -113,10 +113,10 @@
 
 **API đề xuất:** `GET /api/orders`, `GET /api/orders/{id}`, `POST /api/orders/{id}/cancel`.
 
-- [ ] Test `OrderAccessTest`/`OrderCancellationIT`: người A không đọc/hủy đơn B; hủy lặp không hoàn kho/lượt mã hai lần; chặn hủy khi đã xuất giao theo contract TV4.
-- [ ] Phân trang/lọc danh sách; detail dùng snapshot và trạng thái đơn/thanh toán/giao riêng. Không trả internal_note hoặc dữ liệu của người khác.
-- [ ] Hủy phần chưa thực hiện trong transaction, giải phóng giữ hàng và lượt mã; đơn đã thu tiền chuyển yêu cầu hoàn đến Task 10, không chỉ đổi status rồi bỏ quên khoản thu.
-- [ ] Nghiệm thu: React hiển thị lịch sử, chi tiết, trạng thái và quyền hủy đúng nghiệp vụ; không có nút xóa lịch sử đơn.
+- [x] Test `OrderAccessTest`/`OrderCancellationIT`: người A không đọc/hủy đơn B; hủy lặp không hoàn kho/lượt mã hai lần; chặn hủy khi đã xuất giao theo contract TV4.
+- [x] Phân trang/lọc danh sách; detail dùng snapshot và trạng thái đơn/thanh toán/giao riêng. Không trả internal_note hoặc dữ liệu của người khác.
+- [x] Hủy phần chưa thực hiện trong transaction, giải phóng giữ hàng và lượt mã; đơn đã thu tiền chuyển yêu cầu hoàn đến Task 10, không chỉ đổi status rồi bỏ quên khoản thu.
+- [x] Nghiệm thu: React hiển thị lịch sử, chi tiết, trạng thái và quyền hủy đúng nghiệp vụ; không có nút xóa lịch sử đơn.
 
 ## TV3-07 — Quản trị đơn và chuyển trạng thái
 

@@ -109,5 +109,7 @@ Full regression suite còn chứa legacy SpringBoot smoke test, cần schema leg
 1. Khách mở giỏ, tìm/thêm SKU, tăng/giảm, refresh để thấy dữ liệu giữ lại, xóa dòng/xóa hết.
 2. Thêm hàng rồi đăng nhập `tv3.customer`/`tv3.admin`: giỏ khách gộp vào tài khoản, refresh vẫn còn. Đăng xuất tạo lại ngữ cảnh giỏ khách riêng.
 3. Với admin, tạo coupon PERCENT/FIXED, cap, minimum, limits và thời hạn; sửa trường nullable về trống, xem thử số tiền, tắt/bật mã.
-4. Xóa coupon chưa dùng; với dữ liệu đã có tham chiếu, backend trả COUPON_IN_USE và giữ nguyên lịch sử. Tình huống này đã được test tự động bằng order fixture trong DB test, vì API tạo đơn nằm ngoài phạm vi hiện tại.
-5. Giới thiệu OpenAPI, test quyền/CSRF, test thêm/gộp đồng thời và ảnh desktop/mobile. Nêu rõ bước tiếp theo là TV3-04 xem trước checkout.
+4. Với khách, vào checkout, nhập/chọn địa chỉ, thêm mã giảm, chọn dịch vụ/phương thức rồi xem trước. Kiểm tra từng khoản tiền và xác nhận đặt. Xem sản phẩm/địa chỉ snapshot tại `/orders/{id}` và lọc lịch sử tại `/orders`.
+5. Hủy đơn còn chờ xác nhận, xem payment chuyển CANCELLED và tồn/lượt mã được trả. Gửi hủy lần nữa không có hiệu ứng thứ hai. Không thể xem/hủy đơn của tài khoản khác. Đơn đã xuất giao cần hỗ trợ từ cửa hàng.
+6. Quay lại admin: xóa coupon chưa dùng; coupon đã được đơn tham chiếu trả COUPON_IN_USE, có thể tắt mã. Tổng/snapshot của đơn cũ vẫn giữ nguyên.
+7. Giới thiệu OpenAPI, test quyền/CSRF/đặt trùng/tranh lượt mã/đặt–hủy đồng thời và ảnh desktop/mobile. Bước tiếp theo là TV3-07 quản trị đơn, TV3-08 xác minh thu tiền.

@@ -29,6 +29,43 @@ function mount(path = '/checkout', handlers = {}, session = staff) {
 async function requestQuote(user) { await screen.findByRole('button', { name: 'Xem trước đơn hàng' }); await user.click(screen.getByRole('button', { name: 'Xem trước đơn hàng' })); await screen.findByTestId('checkout-total'); }
 async function accept(user) { await user.click(screen.getByLabelText('Tôi đã kiểm tra thông tin và tổng tiền.')); }
 
+it.each([401, 403, 429])('preserves the original unresolved attempt on middleware HTTP %s', async status => {
+  const first = mount('/checkout', { 'POST /api/checkout/quote': quote, 'POST /api/checkout/orders': () => { throw new TypeError('Response lost'); } });
+  await requestQuote(first.user); await accept(first.user); await first.user.click(screen.getByRole('button', { name: 'Đặt hàng' }));
+  await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' });
+  const original = first.calls.find(call => call.url === '/api/checkout/orders'); first.unmount();
+  const next = mount('/checkout', { 'GET /api/cart': emptyCart, 'POST /api/checkout/orders': { status, body: { code: status === 401 ? 'AUTHENTICATION_REQUIRED' : status === 403 ? 'CSRF_INVALID' : 'RATE_LIMITED', message: 'Thử lại sau khi xác thực.' } } });
+  await next.user.click(await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' }));
+  await screen.findByText(/Thử lại sau khi xác thực\./);
+  expect(sessionStorage.length).toBe(1);
+  expect(screen.getByRole('button', { name: 'Thử lại yêu cầu đặt hàng' })).toBeInTheDocument();
+  expect(next.calls.find(call => call.url === '/api/checkout/orders').headers['Idempotency-Key']).toBe(original.headers['Idempotency-Key']);
+});
+
+it('recovers the same order after lost response, expired session, reload and re-login', async () => {
+  const first = mount('/checkout', { 'POST /api/checkout/quote': quote, 'POST /api/checkout/orders': () => { throw new TypeError('Response lost'); } });
+  await requestQuote(first.user); await accept(first.user); await first.user.click(screen.getByRole('button', { name: 'Đặt hàng' }));
+  await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' });
+  const original = first.calls.find(call => call.url === '/api/checkout/orders'); first.unmount();
+  const expired = mount('/checkout', { 'GET /api/cart': emptyCart, 'POST /api/checkout/orders': { status: 401, body: { code: 'AUTHENTICATION_REQUIRED', message: 'Phiên đã hết hạn.' } } });
+  await expired.user.click(await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' })); await screen.findByText(/Phiên đã hết hạn\./); expired.unmount();
+  const login = mount('/checkout', { 'POST /api/session/login': staff, 'POST /api/cart/merge': emptyCart, 'GET /api/cart': emptyCart, 'POST /api/checkout/orders': { status: 201, body: order } }, guest);
+  await login.user.click(await within(await screen.findByRole('main')).findByRole('link', { name: 'Đăng nhập', exact: true }));
+  await login.user.type(screen.getByLabelText('Tên đăng nhập', { exact: true }), 'staff'); await login.user.type(screen.getByLabelText('Mật khẩu', { exact: true }), 'test-password');
+  await login.user.click(screen.getByRole('button', { name: 'Đăng nhập', exact: true }));
+  await login.user.click(await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' })); await screen.findByRole('heading', { name: order.orderNumber });
+  const replay = login.calls.find(call => call.url === '/api/checkout/orders'); expect(replay.headers['Idempotency-Key']).toBe(original.headers['Idempotency-Key']); expect(replay.body).toBe(original.body);
+});
+
+it('restores submitted form data when a replay definitively reports no order was created', async () => {
+  const first = mount('/checkout', { 'POST /api/checkout/quote': quote, 'POST /api/checkout/orders': () => { throw new TypeError('Response lost'); } });
+  await first.user.type(await screen.findByLabelText('Ghi chú cho cửa hàng'), 'Giữ nguyên ghi chú');
+  await requestQuote(first.user); await accept(first.user); await first.user.click(screen.getByRole('button', { name: 'Đặt hàng' })); await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' }); first.unmount();
+  const retry = mount('/checkout', { 'POST /api/checkout/orders': { status: 409, body: { code: 'STOCK_UNAVAILABLE', message: 'Không đủ hàng để tạo đơn.' } } });
+  await retry.user.click(await screen.findByRole('button', { name: 'Thử lại yêu cầu đặt hàng' })); await screen.findByText('Không đủ hàng để tạo đơn.');
+  expect(screen.getByLabelText('Ghi chú cho cửa hàng')).toHaveValue('Giữ nguyên ghi chú'); expect(screen.queryByTestId('checkout-total')).not.toBeInTheDocument(); expect(sessionStorage.length).toBe(0);
+});
+
 it.each(['/checkout', '/orders', '/orders/101'])('requires authentication before loading private route %s', async path => {
   const { calls } = mount(path, {}, guest);
   await screen.findByRole('heading', { name: 'Đăng nhập để tiếp tục' });

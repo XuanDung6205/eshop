@@ -81,6 +81,13 @@ class CheckoutTransactionTest {
         db.update("UPDATE inventory_balances SET on_hand_quantity=10");r.put("couponCode","MISSING");quote(r,alice,409);r.remove("couponCode");
         db.update("DELETE FROM cart_items");quote(r,alice,409);
     }
+    @Test void discountedTotalCannotHideOverflowInStoredSubtotalAndLineAmount() throws Exception {
+        long id=cart(alice,2);
+        db.update("UPDATE product_variants SET price=6000000000000.00 WHERE id=1001");
+        db.update("INSERT INTO coupons(code,discount_type,discount_value,starts_at,ends_at) VALUES('QUARTER','PERCENT',25,'2020-01-01','2099-01-01')");
+        var r=request(id);r.put("couponCode","QUARTER");r.put("assemblyRequested",false);
+        assertEquals("ORDER_AMOUNT_TOO_LARGE",quote(r,alice,409).get("code").asText());assertEquals(0,count("orders"));
+    }
     @Test void placeSnapshotsReservesAndReplaysWithoutConvertingNewCart() throws Exception {
         var r=ready(alice);var o=place(r,alice,"snapshot-key-01",201);long id=o.get("id").asLong();
         assertEquals("PENDING_CONFIRMATION",o.get("status").asText());assertEquals("PENDING",o.get("payments").get(0).get("status").asText());
